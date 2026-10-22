@@ -2,6 +2,21 @@
 
 Java 백엔드를 Kotlin으로 옮길 때 지키는 규칙입니다. 코드 형식은 [ktlint.md](ktlint.md)가 검사하고, 이 문서는 설계와 문법 선택을 다룹니다.
 
+## 필수 규칙 10줄 요약
+
+1. 변환 PR은 기존 동작·API 계약·테스트의 검증 의도를 유지하고, 로직 개선은 별도 PR로 진행합니다.
+2. 의존받는 코드부터 도메인별로 옮기고, 첫 도메인에서 Java 혼용 빌드·JPA 재조회·API 응답을 검증합니다.
+3. DTO는 `data class`와 `val`만 쓰고, 요청 검증 애노테이션에는 `@field:`를 명시합니다.
+4. 요청 DTO의 기존 Java 참조 타입은 nullable로 옮기고 원시 타입은 기존 기본값·null 처리 계약을 유지하며, 필수 참조 값의 non-null 전환은 별도 PR로 진행합니다.
+5. 응답 DTO의 기존 정적 팩토리는 companion object의 `from(...)`으로 옮깁니다.
+6. 엔티티는 일반 `class`, ID는 `var id: Long = 0`, 공개 매핑 프로퍼티는 `var`와 `protected set`으로 선언합니다.
+7. 기본은 `val`, 의존성은 `private val` 생성자 주입으로 쓰고, 엔티티 상태는 도메인 메서드로 변경합니다.
+8. 컬렉션은 내부 가변·외부 복사본으로 분리하고, 기존 `Set`·`Map`의 의미와 JPQL 필드 이름을 유지합니다.
+9. null은 `?:`·`?.`로 처리하고, `!!` 예외에는 사유를 남기며 직접 선언한 조회 메서드는 `Optional` 대신 nullable을 반환합니다.
+10. 작업 범위를 확인하며 `ktlintFormat`을 먼저 실행한 뒤 `ktlintCheck test`를 통과하고, 불필요해진 Java 호환 애노테이션을 제거합니다.
+
+비동기·가상 스레드·코루틴의 도입 판단 또는 구현을 요청받은 경우에만 [async-decision.md](async-decision.md)를 읽습니다. Kotlin 변환 작업에서는 기존 동기 동작을 유지합니다.
+
 ## 평가 항목과 대응
 
 | 평가 항목 | 이 문서 | PR에서 드러나야 할 것 |
@@ -9,7 +24,7 @@ Java 백엔드를 Kotlin으로 옮길 때 지키는 규칙입니다. 코드 형�
 | Nullable / Non-nullable 명시 및 적용 | [2. Null 안정성](#2-null-안정성) | `!!` 없음, `Optional` 제거, DB 제약과 타입 일치 |
 | 데이터 클래스 | [3. 클래스 종류별 규칙](#3-클래스-종류별-규칙) | `record` → `data class`, 오버로드 생성자 → 기본 인자 |
 | Kotlin 함수 및 확장 함수 적용 | [4. 함수형 문법](#4-함수형-문법), [5. 확장 함수](#5-확장-함수) | stream → 컬렉션 함수, 반복 조회 로직의 확장 함수 |
-| 성능 개선 리팩토링 (비동기 처리) | [6. 비동기 처리](#6-비동기-처리) | 병목 측정, 도입 판단 근거, 개선 전후 측정값 |
+| 성능 개선 리팩토링 (비동기 처리) | [별도 도입 판단 문서](async-decision.md) | 병목 측정, 도입 판단 근거, 개선 전후 측정값 |
 
 ## 1. 진행 방식
 
@@ -23,7 +38,7 @@ global(exception, entity) → 도메인별 entity → dto → repository → ser
 
 현재 혼용 빌드에서는 Kotlin 컴파일 시 Java Lombok이 생성할 getter·생성자를 그대로 사용할 수 없습니다. 의존받는 계층부터 옮겨 이 문제를 줄이되, Java가 Kotlin을 호출하는 쪽도 접근자·생성자·정적 메서드의 호환성을 확인합니다.
 
-다른 도메인의 Java 엔티티를 참조해서 막히면 그 엔티티를 먼저 옮깁니다. 그래도 풀리지 않을 때만 Kotlin Lombok 플러그인을 추가합니다([8. 빌드 설정 선행 작업](#8-빌드-설정-선행-작업)).
+다른 도메인의 Java 엔티티를 참조해서 막히면 그 엔티티를 먼저 옮깁니다. 그래도 풀리지 않을 때만 Kotlin Lombok 플러그인을 추가합니다([7. 빌드 설정 선행 작업](#7-빌드-설정-선행-작업)).
 
 ### 첫 도메인에서 검증할 것
 
@@ -31,6 +46,8 @@ global(exception, entity) → 도메인별 entity → dto → repository → ser
 
 - 남아 있는 Java 운영 코드와 테스트가 함께 컴파일되는지
 - 엔티티 저장 후 영속성 컨텍스트를 비우고 재조회했을 때 매핑·컬렉션·감사 필드가 정상인지, 지연 로딩을 사용하는 연관관계가 정상인지
+- no-arg 생성자는 기본적으로 필드 초기화 식을 실행하지 않으므로, 재조회 후 컬렉션과 비영속 필드 등 초기값에 의존하는 상태가 null로 남지 않고 도메인 메서드가 정상 동작하는지
+- `Expense`처럼 `@Version`이 없는 엔티티의 `id == 0L` 신규 저장과, `Settlement`처럼 nullable `@Version`이 있는 엔티티의 신규 저장·재조회·수정 시 버전 증가가 정상인지
 - 기존 API의 정상 응답과 잘못된 입력에 대한 상태 코드·응답 본문이 유지되는지
 
 첫 PR에는 실제로 발생한 호환성 문제, 해결 방법, 검증 결과를 기록합니다.
@@ -44,11 +61,11 @@ global(exception, entity) → 도메인별 entity → dto → repository → ser
 - **변환과 동작 변경을 섞지 않습니다.** 로직 개선, 패키지 이름 정리(`ENUM` → `enums` 등), 비동기 전환은 별도 PR로 올립니다.
 - IntelliJ의 **Convert Java File to Kotlin File**로 1차 변환한 뒤 이 문서 기준으로 정리합니다. 변환기가 만든 `!!`, `lateinit`, 불필요한 `?`를 그대로 두지 않습니다.
 - 기존 테스트의 검증 의도와 기대 결과를 유지합니다. 접근자·생성자 등 호출 문법 변경은 같은 PR에서 허용하지만, 테스트를 통과시키기 위해 assertion을 삭제하거나 기대 결과를 바꾸지 않습니다. API 계약 변경이 필요하면 별도 변경으로 다룹니다.
-- 머지 전 `./gradlew ktlintCheck test`를 통과합니다.
+- 머지 전 `./gradlew ktlintFormat`을 먼저 실행하고 변경 범위가 작업 대상에 한정되는지 확인한 뒤 `./gradlew ktlintCheck test`를 통과합니다. 다른 팀원 파일의 형식 변경은 포함하지 않습니다.
 
 ### Java 호출 호환성
 
-변환할 클래스의 Java 호출자를 먼저 찾고, 같은 PR에서 호출부를 수정할지 기존 호출 형태를 유지할지 정합니다. 임시 호환 메서드는 Java 호출자가 없어지면 제거합니다.
+변환할 클래스의 Java 호출자를 먼저 찾고, 같은 PR에서 호출부를 수정할지 기존 호출 형태를 유지할지 정합니다. 임시 호환 메서드와 Java 호출 유지만을 위해 붙인 `@JvmStatic`·`@JvmOverloads`는 Java 호출자가 없어지면 제거합니다. 외부 공개 API 등 별도 호환성 요구가 있으면 유지 사유를 PR에 적습니다.
 
 | 변경 | 혼용 기간의 처리 |
 | --- | --- |
@@ -83,6 +100,7 @@ val message = e.bindingResult.fieldError
     ?.defaultMessage
     ?: "잘못된 요청입니다."
 ```
+
 - **아직 Java인 코드의 반환값은 타입을 명시합니다.** 그러지 않으면 nullable 여부를 모르는 플랫폼 타입(`User!`)이 그대로 퍼집니다.
 
 ```kotlin
@@ -113,19 +131,36 @@ var id: Long = 0
 
 `val`로 선언하면 `private final` 필드가 되고, JPA가 이 final 필드를 리플렉션으로 채우게 됩니다. JDK 26부터 리플렉션으로 final 필드를 변경하면 경고가 나오고 이후 차단될 예정이므로([JEP 500](https://openjdk.org/jeps/500)) `var`로 선언합니다. ID는 애플리케이션에서 변경하지 않고 JPA가 필드 접근으로 채웁니다. 첫 엔티티 전환 시 현재 Hibernate 설정에서 신규 엔티티 판별, 저장 후 ID 할당, 재조회를 확인합니다. 응답에는 저장된 엔티티의 ID를 사용하며, 저장 전 객체를 변환할 수 있는 경계에서는 `check(id != 0L)`로 확인합니다.
 
+`Settlement`의 기존 `@Version Long version`은 Kotlin에서도 `var version: Long? = null`과 `protected set`으로 유지합니다. Spring Data JPA는 nullable 버전 프로퍼티가 있으면 ID보다 버전의 null 여부를 먼저 사용해 신규 엔티티를 판별하므로, `0`으로 초기화하거나 non-null로 바꾸지 않습니다. [Spring Data JPA 신규 엔티티 판별](https://docs.spring.io/spring-data/jpa/reference/jpa/entity-persistence.html)을 참고합니다.
+
 ### 요청 DTO
 
-**변환 PR에서는 기존 API 계약을 유지합니다.** 요청 DTO의 필드는 필수 값이어도 `?` 타입으로 두고, Java에서 `@NotNull`이던 필드는 `@field:NotNull`을 유지합니다.
+**변환 PR에서는 기존 API 계약을 유지합니다.** 요청 DTO의 기존 Java 참조 타입(`String`, `BigDecimal`, `Long`, `List` 등)은 필수 값이어도 `?` 타입으로 두고, Java에서 `@NotNull`이던 필드는 `@field:NotNull`을 유지합니다. 기존 원시 타입(`boolean`, `int`, `long` 등)은 일괄 nullable 전환 대상에서 제외하고, 기본값·필드 누락·명시적 null 처리와 Java 호출 시그니처를 확인합니다. 예를 들어 `boolean randomRemainder`는 `val randomRemainder: Boolean = false`로 옮기되 누락과 명시적 null 요청의 응답이 기존과 같은지 검증합니다.
 
 필수 필드를 non-null 타입으로 바꾸면 필드가 빠진 요청이 Bean Validation 이전의 Jackson 역직렬화 단계에서 실패합니다. 그러면 400 응답의 메시지가 Validation 메시지에서 Jackson 내부 메시지로 바뀌고, 현재 `GlobalExceptionHandler`는 이 메시지를 그대로 응답합니다. 기존 테스트는 이 경우의 메시지를 검증하지 않아 변경이 드러나지 않습니다.
 
 - 검증을 통과한 값을 non-null로 꺼낼 때는 `!!` 대신 `checkNotNull`을 쓰고, 꺼내는 위치를 요청 → 도메인 변환 지점 한 곳으로 모읍니다.
 - 필수 필드의 non-null 전환은 별도 PR에서 진행합니다. 이 PR에서는 다음을 함께 합니다.
   - `HttpMessageNotReadableException` 처리가 내부 메시지 대신 고정 메시지를 응답하도록 수정
-  - 필수 필드 누락·null 원소 요청에 대한 API 테스트 추가
+  - 필수 필드 누락·명시적 null·null 원소 요청에 대한 기존 API 테스트를 실행하고, 역직렬화 단계 변경에 맞춰 검증 보완
   - non-null 타입과 중복되는 `@field:NotNull` 제거
 - 요청 DTO 프로퍼티의 검증 애노테이션에는 **`@field:NotBlank`, `@field:Size`, `@field:Positive`처럼 use-site target을 반드시 명시**합니다. 중첩 객체 검증도 `@field:Valid`로 지정합니다.
 - 현재 빌드의 `-Xannotation-default-target=param-property`에서는 target 생략 시에도 필드에 적용될 수 있습니다. 따라서 생략하면 항상 검증이 실패하는 것은 아닙니다. 팀 규칙은 컴파일러 기본 동작에 기대지 않고 검증 대상을 명시하는 것입니다. [Kotlin 애노테이션 문서](https://kotlinlang.org/docs/annotations.html#annotation-use-site-targets)를 참고합니다.
+
+#### 컬렉션 원소 검증
+
+목록 자체의 제약과 원소의 제약을 구분합니다. 기존 `List<@NotNull @Valid Participant>`는 목록의 `@field:NotEmpty`·`@field:Size`, 중첩 객체 검증의 `@field:Valid`, 원소의 null 금지 제약을 각각 유지합니다. `@field:Valid`만으로 null 원소가 금지되지는 않습니다. 원소 제약은 프로퍼티의 `@field:` 대신 타입 인자에 붙이는 애노테이션이므로 아래처럼 작성합니다.
+
+```kotlin
+@field:NotEmpty
+@field:Size(max = 100)
+@field:Valid
+val participants: List<@NotNull Participant?>?,
+```
+
+변환 PR에서는 null 원소가 기존처럼 Bean Validation에서 거절되도록 원소 타입도 nullable로 둡니다. **`-Xemit-jvm-type-annotations`는 필수 빌드 설정입니다.** 이 옵션이 없으면 타입 인자에 붙인 `@NotNull`이 JVM 바이트코드에 기록되지 않아 검증기가 null 원소를 거절하지 못합니다. `-Xannotation-default-target=param-property`와 `@field:`는 프로퍼티 애노테이션의 적용 위치를 정할 뿐, 타입 인자 애노테이션의 출력을 대신하지 않습니다. 현재 `build.gradle`의 `kotlin.compilerOptions.freeCompilerArgs`에 출력 옵션을 적용합니다. [Kotlin JVM 타입 애노테이션 문서](https://kotlinlang.org/docs/whatsnew14.html#type-annotations-in-the-jvm-bytecode)를 참고합니다.
+
+목록 누락·명시적 null·빈 목록·`[null]`·필드가 잘못된 원소에 대한 API 테스트를 변환 PR에서 실행하고, 없는 경우 추가합니다. 이 검증을 향후 non-null 전환 PR로 미루지 않습니다. [Hibernate Validator 원소 제약 문서](https://docs.hibernate.org/validator/8.0/reference/en-US/html_single/#section-container-element-constraints)를 참고합니다.
 
 ### Spring API
 
@@ -153,13 +188,14 @@ val message = e.bindingResult.fieldError
 - **매핑 필드는 `val` 대신 `var` + `protected set`으로 선언합니다.** `val`은 final 필드가 되어 JPA가 리플렉션으로 값을 채울 때 문제가 됩니다([엔티티 id](#엔티티-id) 참고). 값이 바뀌지 않는 필드는 변경 메서드를 만들지 않는 것으로 표현하고, 도메인 메서드로만 상태를 바꿉니다.
 - `private set`은 쓸 수 없습니다. `allOpen`이 엔티티의 프로퍼티까지 open으로 만들기 때문에 `Private setters for open properties are prohibited` 컴파일 에러가 납니다.
 - 컬렉션 필드도 Hibernate가 조회 시 자체 컬렉션으로 교체하므로 `private var`로 선언합니다.
-- 기본 생성자·프록시를 위한 `open` 처리는 컴파일러 플러그인에 맡깁니다. 현재 Kotlin 버전에서는 `kotlin-jpa`의 기본 생성자 생성과 JPA용 `allOpen` 설정이 필요하며, `kotlin-spring`만으로 엔티티가 열리지는 않습니다([8. 빌드 설정 선행 작업](#8-빌드-설정-선행-작업)).
+- 기본 생성자·프록시를 위한 `open` 처리는 컴파일러 플러그인에 맡깁니다. 현재 Kotlin 버전에서는 `kotlin-jpa`의 기본 생성자 생성과 JPA용 `allOpen` 설정이 필요하며, `kotlin-spring`만으로 엔티티가 열리지는 않습니다([7. 빌드 설정 선행 작업](#7-빌드-설정-선행-작업)).
 - 식별자는 [엔티티 id 규칙](#엔티티-id)에 따라 `var id: Long = 0` + `protected set`을 씁니다.
 - `equals`/`hashCode`는 기본 구현을 유지합니다. 도메인상 동일성 비교가 필요하면 ID 기반으로 구현하되, 서로 다른 미저장 엔티티(`id == 0L`)를 같다고 판단하지 않고 프록시 비교와 저장 전후 해시 컬렉션 동작을 검증합니다.
 - `toString`을 재정의할 때 연관관계와 컬렉션을 출력하지 않습니다.
 - Lombok 빌더는 생성자와 기본 인자로 대체합니다. 기존 정적 팩토리가 도메인 규칙을 담고 있으면 companion object 함수로 유지합니다.
 - 컬렉션 필드는 `private`인 `MutableSet`/`MutableMap`으로 두고, 외부에는 복사본을 반환하는 함수로 노출합니다. 혼용 기간에는 기존 Java getter 이름을 유지해 호출부 변경을 줄일 수 있습니다.
 - **JPQL이 참조하는 필드 이름은 바꾸지 않습니다.** 예를 들어 `ExpenseRepository`의 쿼리가 `e.participantIds`를 쓰므로, `_participantIds` 같은 이름으로 바꾸면 쿼리가 깨집니다.
+- 문자열 공백 처리는 기존 기준을 유지합니다. Java `String.strip()`을 Kotlin 기본 `trim()`으로 일괄 대체하면 NBSP(U+00A0) 등의 처리 결과가 달라집니다. 변환 시에는 `trim { Character.isWhitespace(it) }`처럼 기존 판별 기준을 명시하고, 생성·수정 경로 모두 일반 공백·탭·줄바꿈·NBSP 입력 결과를 확인합니다. 공백 제거 범위 변경은 별도 리팩토링 PR로 다룹니다. [Java String.strip() 문서](https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html#strip())를 참고합니다.
 
 ```kotlin
 @Entity
@@ -185,10 +221,9 @@ class Expense(
     var payerMemberId: Long = payerMemberId
         protected set
 
-    // Java의 String.strip()은 Kotlin에서 호출할 수 없습니다.
-    // trim()은 strip()과 달리 NBSP(U+00A0) 같은 공백 문자도 제거합니다.
+    // 기존 String.strip()의 공백 판별 기준을 유지합니다.
     @Column(nullable = false, length = 255)
-    var title: String = title.trim()
+    var title: String = title.trim { Character.isWhitespace(it) }
         protected set
 
     @Column(length = 2000)
@@ -248,6 +283,7 @@ data class ExpenseResponse(
     }
 }
 ```
+
 - Kotlin에서 Kotlin 생성자를 호출할 때 인자가 3개를 넘으면 이름 붙은 인자를 씁니다. Java 생성자를 호출할 때는 사용할 수 없습니다.
 
 ### 서비스·컴포넌트
@@ -379,105 +415,20 @@ fun ExpenseRepository.getExpense(expenseId: Long): Expense =
 // Java: ExpenseRepositoryExtensions.getExpense(expenseRepository, expenseId)
 ```
 
-## 6. 비동기 처리
-
-### 현재 상태
-
-- `@EnableScheduling`과 스케줄러 2개: `ContentPollCloseScheduler`, `SchedulePollCloseScheduler`
-- `@TransactionalEventListener(AFTER_COMMIT)` 리스너 3개: `SettlementClosedEventListener`, `ContentPollClosedEventListener`, `SchedulePollClosedEventListener`. 커밋 후에 **이벤트를 발행한 스레드에서 동기로** 실행됩니다. 요청 처리 중 발행한 경우 알림 저장 시간이 API 응답 시간에 포함됩니다.
-- 정산·콘텐츠 리스너는 별도 writer의 `REQUIRES_NEW` 트랜잭션에서 저장하고, 일정 리스너는 리스너 메서드 자체에 `REQUIRES_NEW`가 붙어 있습니다.
-- 외부 HTTP 호출은 없습니다.
-
-### 도입 여부를 먼저 판단
-
-비동기·가상 스레드·코루틴은 Kotlin 전환의 필수 작업이 아닙니다. 먼저 응답 시간 중 알림 저장이 차지하는 비중과 DB 커넥션 대기를 측정합니다. 비동기로 분리할 근거가 있으면 별도 PR로 진행합니다.
-
-- 응답 전에 알림 저장이 완료되어야 하는지, 어느 정도 지연을 허용하는지 정합니다.
-- 서버 종료나 실행 실패로 인한 알림 유실을 허용하는지 정합니다. 허용하지 않으면 인메모리 `@Async`만으로 해결하지 않고 outbox 등 영속적인 작업 기록과 재처리를 검토합니다.
-- 요청 지연뿐 아니라 알림 완료 지연·실패와 DB 부하도 함께 비교합니다.
-
-### `@Async`를 선택한 경우
-
-아래는 알림 저장의 지연·유실 허용 범위를 정한 뒤 적용하는 예시입니다.
-
-```kotlin
-@Async
-@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-fun onClosed(event: SettlementClosedEvent) {
-    try {
-        notificationWriter.save(event.meetingId)
-    } catch (e: RuntimeException) {
-        log.error("정산 확정 알림 저장 실패: meetingId={}, settlementId={}", event.meetingId, event.settlementId, e)
-    }
-}
-```
-
-- 실패 로그와 관측 방법을 마련합니다. 반환값이 없는 `@Async` 메서드의 예외는 호출자에게 전달되지 않습니다.
-- DB 쓰기는 별도 Spring 빈인 writer의 `@Transactional(propagation = REQUIRES_NEW)` 메서드를 호출합니다. 일정 리스너에도 이 예시를 적용하려면 writer 분리가 선행되어야 합니다.
-- 반드시 실행되어야 하는 후속 작업은 영속적인 작업 기록·재처리 보장 없이 인메모리 비동기로 분리하지 않습니다.
-
-### 실행기 선택
-
-`@Async`를 도입할 때 `@EnableAsync`와 실행기를 함께 설정합니다. 전용 실행기로 알림 작업의 동시 실행 수·대기 작업 수·포화 시 처리 정책을 정합니다. Java 25 사용 자체는 가상 스레드를 켤 근거가 아닙니다.
-
-가상 스레드를 선택한다면 아래 전역 설정의 영향 범위를 확인합니다.
-
-```yaml
-spring:
-  threads:
-    virtual:
-      enabled: true
-```
-
-- 이 설정은 `@Async`뿐 아니라 Tomcat 요청 처리에도 적용됩니다. 전역 변경이므로 별도 PR로 올리고 기존 테스트 전체를 돌립니다.
-- 자동 구성 실행기는 가상 스레드를 사용하지만, 사용자 정의 실행기가 있으면 실제 선택되는 실행기를 확인합니다. [Spring Boot 실행기 문서](https://docs.spring.io/spring-boot/reference/features/task-execution-and-scheduling.html)를 참고합니다.
-- DB 커넥션 풀은 동시에 커넥션을 사용하는 수를 제한할 뿐, 대기 작업의 수까지 제한하지 않습니다. 실제 풀 크기와 요청 처리의 커넥션 사용량을 확인하고, 작업 유입량·동시 실행 수·대기를 별도로 제한합니다.
-
-### 테스트
-
-비동기로 바꾸면 "요청 직후 알림이 저장되었다"를 바로 검증하는 테스트가 실패하거나 간헐적으로 실패합니다(`SettlementClosedEventTest`, `ContentPollClosedEventTest`, `NotificationIntegrationTest` 등). Awaitility로 저장될 때까지 기다리도록 바꿉니다.
-
-대기에는 제한 시간을 두고, 롤백 시 알림 미생성·작업 실패·실행기 포화 시 동작도 검증합니다. 이 테스트 변경은 비동기 PR에 포함합니다.
-
-### 코루틴
-
-`suspend` 함수에 `@Transactional`을 붙이지 않습니다. JPA 트랜잭션과 영속성 컨텍스트는 스레드에 묶여 있는데, 코루틴은 중단 후 다른 스레드에서 재개될 수 있습니다.
-
-현재 프로젝트에서는 독립적인 블로킹 작업을 병렬 실행할 필요가 측정으로 확인된 경우에만 코루틴을 검토합니다. 각 작업은 트랜잭션이 시작되고 끝나는 일반(블로킹) 함수 하나를 별도 Spring 빈을 통해 호출합니다. 동시 실행 수는 다른 요청의 커넥션 사용량을 고려해 정합니다.
-
-```kotlin
-// 개념 예시: 한 배치 안의 동시 실행 수를 제한합니다.
-// 실제 도입 시 배치 중복 실행과 전체 작업 수 제한, 개별 실패 처리도 필요합니다.
-// closeOneIfExpired는 별도 Spring 빈의 @Transactional 메서드입니다.
-val dispatcher = Dispatchers.IO.limitedParallelism(4)
-coroutineScope {
-    expiredPollIds.forEach { pollId ->
-        launch(dispatcher) { contentPollCloseService.closeOneIfExpired(pollId) }
-    }
-}
-```
-
-도입할 때는 `kotlinx-coroutines-core` 의존성 추가를 별도 PR로 올립니다.
-
-### 성능 개선 PR
-
-- 개선 전후 수치와 측정 방법을 PR에 적습니다(예: 정산 확정 API 응답 시간 p50/p95).
-- 측정하지 않은 "성능 개선"은 PR 설명에 쓰지 않습니다.
-
-## 7. 테스트
+## 6. 테스트
 
 - 테스트 파일 자체의 Kotlin 전환은 대상 운영 코드를 옮긴 PR이 머지된 뒤 별도 PR로 합니다. 운영 코드 전환에 필요한 기존 Java 테스트의 호출 문법 수정은 운영 코드 PR에 포함합니다.
 - 테스트 이름은 백틱으로 씁니다: ``fun `지출 등록 시 분담 금액이 저장된다`()``
 - 모킹은 Mockito와 `@MockitoBean`을 유지합니다. Kotlin에서 `when`은 키워드이고 Mockito의 `any()`는 null을 반환해 non-null 파라미터에서 실패하므로, mockito-kotlin의 `whenever`, `any()`를 씁니다.
 - 주입 필드는 `@Autowired lateinit var`로 씁니다.
 
-## 8. 빌드 설정 선행 작업
+## 7. 빌드 설정 선행 작업
 
 | 작업 | 시점 |
 | --- | --- |
 | `allOpen`에 JPA 어노테이션 추가 (아래) | 첫 엔티티 전환 전 |
+| `-Xemit-jvm-type-annotations` 컴파일러 옵션 유지 | 첫 요청 DTO 전환 전 (현재 빌드에 반영) |
 | mockito-kotlin 테스트 의존성 추가 | 첫 테스트 전환 전 |
-| `@EnableAsync`, 실행기 설정 및 필요 시 가상 스레드 설정 | 측정 후 도입을 결정한 비동기 PR |
 | (필요할 때만) `org.jetbrains.kotlin.plugin.lombok` | Kotlin이 Java Lombok 클래스를 참조해야 할 때 |
 | Lombok 의존성·플러그인 제거 | 마지막 Java 파일 전환 후 |
 
@@ -491,15 +442,21 @@ allOpen {
 }
 ```
 
-## 9. PR 체크리스트
+`kotlin-jpa`의 no-arg 생성자는 기본적으로 필드 초기화 식과 초기화 블록을 실행하지 않습니다(`invokeInitializers` 기본값은 `false`). 일반 생성자로 생성한 객체와 Hibernate가 no-arg 생성자로 재구성한 객체를 구분해 검증합니다. DB 매핑 필드는 로딩 시 채워지지만, 비영속 필드나 초기값에 의존하는 로직은 별도로 확인합니다. 초기화 실행이 필요하면 `invokeInitializers` 설정과 기존 초기화 코드의 안전성을 함께 검토합니다. [Kotlin no-arg 플러그인 문서](https://kotlinlang.org/docs/no-arg-plugin.html)를 참고합니다.
+
+## 8. PR 체크리스트
 
 ```markdown
-- [ ] `./gradlew ktlintCheck test` 통과
+- [ ] `./gradlew ktlintFormat`을 먼저 실행해 변경 범위를 확인한 뒤 `./gradlew ktlintCheck test` 통과
 - [ ] 변환과 동작 변경을 분리했다
 - [ ] 남은 Java 호출부의 접근자·생성자·정적 메서드·반환 타입 호환성을 확인했다
+- [ ] Java 호출자가 사라진 호환 애노테이션(`@JvmStatic`, `@JvmOverloads`)과 임시 호환 메서드를 제거했다 (유지 시 사유 기재)
 - [ ] 기존 테스트의 검증 의도와 기대 결과를 유지했다
-- [ ] (엔티티 전환) 저장 후 영속성 컨텍스트를 비우고 재조회해 매핑을 확인했다
+- [ ] (엔티티 전환) 저장 후 영속성 컨텍스트를 비우고 재조회해 매핑과 no-arg 초기화에 의존하는 컬렉션·비영속 상태를 확인했다
+- [ ] (첫 도메인 검증) `Expense`의 ID 기반 신규 판별과 `Settlement`의 nullable `@Version` 기반 신규 판별·버전 증가를 확인했다
 - [ ] (DTO 전환) 정상 요청과 잘못된 입력의 API 계약을 확인했다
+- [ ] (컬렉션 요청 전환) `-Xemit-jvm-type-annotations` 설정을 확인하고, 목록 누락·null·빈 목록·null 원소·잘못된 원소 검증을 API 테스트로 확인했다
+- [ ] (문자열 처리 전환) 생성·수정 경로의 기존 공백 판별 기준을 유지하고 NBSP 등 경계 입력을 확인했다
 - [ ] `!!` 없음 (있다면 사유 주석)
 - [ ] Java 반환값을 받을 때 타입을 명시했다
 - [ ] `Optional` 대신 `T?` / `findByIdOrNull`
@@ -508,13 +465,11 @@ allOpen {
 - [ ] 엔티티의 동일성·해시값 처리를 확인하고 `toString`에서 연관관계를 제외했다
 - [ ] 목록은 내부 `MutableList` / 외부 `List`로 분리하고, 기존 `Set`·`Map`의 의미를 유지했다
 - [ ] DTO는 `data class`와 `val`만 사용하고, 요청 검증 애노테이션에는 `@field:`를 붙였다
-- [ ] (변환 PR) 요청 DTO 필드는 `?` 타입과 기존 `@field:NotNull`을 유지했다
+- [ ] (변환 PR) 요청 DTO의 기존 Java 참조 타입은 nullable과 기존 검증 제약을 유지하고, 원시 타입은 기존 기본값·누락·null 처리 및 Java 호출 시그니처를 확인했다
 - [ ] 응답 DTO의 기존 정적 팩토리는 companion object `from(...)`으로 옮겼다
 - [ ] 기본 인자 적용 시 필요한 Java용 생성자 시그니처를 유지했다
 - [ ] `lateinit`은 JPA·테스트 설정에 제한하고, 연속된 `?.`는 한 줄에 하나씩 나눴다
 - [ ] stream을 Kotlin 컬렉션 함수로 바꿨다
-- [ ] (성능 PR) 전후 측정값을 첨부했다
-- [ ] (비동기 PR) 지연·유실 허용 범위, 작업량 제한, 실패 처리와 관측 방법을 정했다
 ```
 
 ## 참고 문서
@@ -526,5 +481,4 @@ allOpen {
 - [Kotlin: Calling Java from Kotlin](https://kotlinlang.org/docs/java-interop.html) / [Calling Kotlin from Java](https://kotlinlang.org/docs/java-to-kotlin-interop.html)
 - [Kotlin: All-open](https://kotlinlang.org/docs/all-open-plugin.html) / [No-arg](https://kotlinlang.org/docs/no-arg-plugin.html) / [Lombok](https://kotlinlang.org/docs/lombok.html) 컴파일러 플러그인
 - [Kotlin Coding Conventions](https://kotlinlang.org/docs/coding-conventions.html)
-- [Kotlin Coroutines](https://kotlinlang.org/docs/coroutines-guide.html)
 - [mockito-kotlin](https://github.com/mockito/mockito-kotlin)
