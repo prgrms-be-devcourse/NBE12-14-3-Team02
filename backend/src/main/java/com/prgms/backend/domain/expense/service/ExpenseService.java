@@ -4,7 +4,7 @@ import com.prgms.backend.domain.expense.dto.ExpenseCreateRequest;
 import com.prgms.backend.domain.expense.dto.ExpenseResponse;
 import com.prgms.backend.domain.expense.dto.ExpenseListResponse;
 import com.prgms.backend.domain.expense.exception.ExpenseRequestException;
-import com.prgms.backend.domain.settlement.entity.SettlementStatus;
+import com.prgms.backend.domain.settlement.enums.SettlementStatus;
 import com.prgms.backend.domain.expense.entity.Expense;
 import com.prgms.backend.domain.expense.repository.ExpenseRepository;
 import com.prgms.backend.domain.meeting.enums.MeetingMemberStatus;

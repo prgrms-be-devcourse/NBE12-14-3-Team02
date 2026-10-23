@@ -2,7 +2,7 @@ package com.prgms.backend.domain.settlement.service;
 
 import com.prgms.backend.domain.settlement.dto.*;
 import com.prgms.backend.domain.settlement.entity.SettlementAccount;
-import com.prgms.backend.domain.settlement.entity.SettlementStatus;
+import com.prgms.backend.domain.settlement.enums.SettlementStatus;
 import com.prgms.backend.domain.settlement.integration.MeetingAccessPort;
 import com.prgms.backend.domain.settlement.repository.SettlementAccountRepository;
 import com.prgms.backend.domain.settlement.repository.SettlementRepository;

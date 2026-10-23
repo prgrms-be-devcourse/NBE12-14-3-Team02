@@ -1,0 +1,105 @@
+package com.prgms.backend.domain.settlement;
+
+import com.prgms.backend.domain.settlement.entity.Settlement;
+import com.prgms.backend.domain.settlement.entity.SettlementAccount;
+import com.prgms.backend.domain.settlement.entity.SettlementAccountSnapshot;
+import com.prgms.backend.domain.settlement.entity.SettlementBalance;
+import com.prgms.backend.domain.settlement.enums.SettlementStatus;
+import com.prgms.backend.domain.settlement.entity.SettlementTransfer;
+import com.prgms.backend.domain.settlement.repository.SettlementAccountRepository;
+import com.prgms.backend.domain.settlement.repository.SettlementRepository;
+import com.prgms.backend.support.MySqlContainerSupport;
+import jakarta.persistence.EntityManager;
+import java.util.List;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
+import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+@DataJpaTest(showSql = false)
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+class SettlementPersistenceTest extends MySqlContainerSupport {
+
+    @Autowired private SettlementRepository settlements;
+    @Autowired private SettlementAccountRepository accounts;
+    @Autowired private EntityManager entityManager;
+
+    @Test @DisplayName("version이 null인 정산은 신규 저장되고, 재조회 후 확정·계좌 보충 시 버전과 컬렉션이 유지")
+    void saveReloadAndUpdate() {
+        Settlement settlement = new Settlement(10);
+        assertEquals(0L, settlement.getId());
+        assertNull(settlement.getVersion());
+
+        long id = settlements.saveAndFlush(settlement).getId();
+        assertNotEquals(0L, id);
+        entityManager.clear();
+
+        Settlement found = settlements.findByMeetingId(10).orElseThrow();
+        assertEquals(id, found.getId());
+        assertEquals(0L, found.getVersion());
+        assertEquals(SettlementStatus.OPEN, found.getStatus());
+        assertNull(found.getClosedByMemberId());
+        assertNull(found.getClosedAt());
+        // no-arg 생성자로 복원된 엔티티에서도 컬렉션이 null이 아니다
+        assertTrue(found.getBalances().isEmpty());
+        assertTrue(found.getTransfers().isEmpty());
+        assertTrue(found.getAccounts().isEmpty());
+
+        SettlementAccount recipient = accounts.saveAndFlush(new SettlementAccount(10, 1, "은행", "001-234", "예금주"));
+        found.saveResult(
+                List.of(new SettlementBalance(1, 300, 100), new SettlementBalance(2, 0, 200)),
+                List.of(new SettlementTransfer(2, 1, 200)));
+        found.saveAccounts(List.of(new SettlementAccountSnapshot(recipient)));
+        found.close(1);
+        entityManager.flush();
+        entityManager.clear();
+
+        Settlement closed = settlements.findById(id).orElseThrow();
+        assertEquals(1L, closed.getVersion());
+        assertEquals(SettlementStatus.CLOSED, closed.getStatus());
+        assertEquals(1L, closed.getClosedByMemberId());
+        assertNotNull(closed.getClosedAt());
+        assertEquals(List.of(1L, 2L), closed.getBalances().stream().map(SettlementBalance::getMemberId).toList());
+        assertEquals(200L, closed.getBalances().get(1).getShareAmount());
+        assertEquals(2L, closed.getTransfers().getFirst().getSenderId());
+        assertEquals(1L, closed.getTransfers().getFirst().getRecipientId());
+        assertEquals("001-234", closed.getAccounts().getFirst().getAccountNumber());
+        assertFalse(closed.canRegisterMissingAccount(1));
+
+        // 외부에 노출한 목록을 바꿔도 엔티티 상태는 바뀌지 않는다
+        assertThrows(UnsupportedOperationException.class, () -> closed.getAccounts().clear());
+        assertEquals(1, closed.getAccounts().size());
+    }
+
+    @Test @DisplayName("계좌는 기존 strip 기준으로 공백을 제거하고, 수정 실패 시 기존 값을 유지")
+    void accountSaveAndUpdate() {
+        SettlementAccount account = new SettlementAccount(10, 1, " 은행\t", "001-234", " 예금주\n");
+        assertEquals("은행", account.getBankName());
+        // 기존 String.strip() 기준: NBSP는 공백으로 보지 않는다
+        assertEquals(" 예금주", account.getAccountHolder());
+        assertDoesNotThrow(() -> new SettlementAccount(10, 2, " ", "1", "예금주"));
+        assertThrows(IllegalArgumentException.class, () -> new SettlementAccount(10, 2, " \t", "1", "예금주"));
+        assertThrows(IllegalArgumentException.class, () -> new SettlementAccount(10, 2, null, "1", "예금주"));
+        assertThrows(IllegalArgumentException.class, () -> new SettlementAccount(10, 2, "은행", "1-", "예금주"));
+        assertThrows(IllegalArgumentException.class, () -> new SettlementAccount(0, 2, "은행", "1", "예금주"));
+
+        long id = accounts.saveAndFlush(account).getId();
+        entityManager.clear();
+
+        SettlementAccount found = accounts.findByMeetingIdAndMemberId(10, 1).orElseThrow();
+        assertEquals(id, found.getId());
+        assertThrows(IllegalArgumentException.class, () -> found.update("새 은행", "abc", "새 예금주"));
+        assertEquals("은행", found.getBankName());
+        found.update(" 새 은행 ", "999", "새 예금주");
+        entityManager.flush();
+        entityManager.clear();
+
+        SettlementAccount updated = accounts.findById(id).orElseThrow();
+        assertEquals("새 은행", updated.getBankName());
+        assertEquals("999", updated.getAccountNumber());
+        assertEquals("새 예금주", updated.getAccountHolder());
+    }
+}

@@ -1,7 +1,7 @@
 package com.prgms.backend.domain.settlement.dto;
 
 import com.prgms.backend.domain.settlement.entity.Settlement;
-import com.prgms.backend.domain.settlement.entity.SettlementStatus;
+import com.prgms.backend.domain.settlement.enums.SettlementStatus;
 import com.prgms.backend.domain.settlement.service.SettlementCalculator.Balance;
 import com.prgms.backend.domain.settlement.service.SettlementCalculator.Transfer;
 import java.time.LocalDateTime;

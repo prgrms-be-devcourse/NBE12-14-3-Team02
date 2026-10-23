@@ -1,7 +1,7 @@
 package com.prgms.backend.domain.settlement.repository;
 
 import com.prgms.backend.domain.settlement.entity.Settlement;
-import com.prgms.backend.domain.settlement.entity.SettlementStatus;
+import com.prgms.backend.domain.settlement.enums.SettlementStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.Optional;
 

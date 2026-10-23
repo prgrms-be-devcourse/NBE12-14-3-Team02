@@ -3,7 +3,7 @@ package com.prgms.backend.domain.settlement.service;
 import com.prgms.backend.domain.meeting.entity.MeetingMember;
 import com.prgms.backend.domain.settlement.dto.SettlementResponse;
 import com.prgms.backend.domain.settlement.entity.Settlement;
-import com.prgms.backend.domain.settlement.entity.SettlementStatus;
+import com.prgms.backend.domain.settlement.enums.SettlementStatus;
 import com.prgms.backend.domain.user.entity.SecurityUser;
 import com.prgms.backend.global.exception.custom.settlement.SettlementRequestException;
 import jakarta.persistence.EntityManager;

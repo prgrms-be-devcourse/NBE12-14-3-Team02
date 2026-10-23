@@ -7,7 +7,7 @@ import com.prgms.backend.domain.settlement.dto.SettlementResponse;
 import com.prgms.backend.domain.settlement.dto.SettlementPreviewResponse;
 import com.prgms.backend.domain.settlement.entity.Settlement;
 import com.prgms.backend.domain.settlement.entity.SettlementBalance;
-import com.prgms.backend.domain.settlement.entity.SettlementStatus;
+import com.prgms.backend.domain.settlement.enums.SettlementStatus;
 import com.prgms.backend.domain.settlement.entity.SettlementTransfer;
 import com.prgms.backend.domain.settlement.entity.SettlementAccount;
 import com.prgms.backend.domain.settlement.entity.SettlementAccountSnapshot;
