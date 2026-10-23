@@ -14,6 +14,8 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -21,6 +23,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
@@ -208,6 +211,114 @@ class SettlementApiIntegrationTest extends MySqlContainerSupport {
                 {"bankName":"국민은행","accountNumber":"12-ab","accountHolder":"모임장"}
                 """)), 400);
         assertEquals(0, count("SELECT COUNT(*) FROM settlement_accounts WHERE meeting_id = ?", meetingId));
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    @DisplayName("총금액 또는 개인 부담액이 소수이면 400을 반환하고 지출을 저장하지 않는다")
+    void rejectsFractionalAmounts(boolean fractionalTotal) throws Exception {
+        String amount = fractionalTotal ? "10000.5" : "10000";
+        String share = fractionalTotal ? "10000" : "10000.5";
+        String body = """
+            {"title":"소수 금액","amount":%s,"splitMode":"EXACT","participants":[
+                {"memberId":%d,"amount":%s}]}
+            """.formatted(amount, hostMemberId, share);
+
+        assertError(mvc.perform(post("/api/meetings/" + meetingId + "/expenses")
+            .header(AUTHORIZATION, bearer(host)).contentType(APPLICATION_JSON).content(body)), 400);
+        assertEquals(0, count("SELECT COUNT(*) FROM expenses WHERE meeting_id = ?", meetingId));
+    }
+
+    @Test
+    @DisplayName("Int 범위를 넘는 금액이 지출 등록부터 정산 저장·재조회까지 유지된다")
+    void preservesLargeAmounts() throws Exception {
+        // 송금액 자체도 Int 범위를 넘도록 결제자는 부담하지 않는다.
+        createExpense(host, "큰 금액", 3_000_000_001L, Map.of(secondMemberId, 3_000_000_001L));
+
+        assertEquals(3_000_000_001L, jdbc.queryForObject(
+            "SELECT amount FROM expenses WHERE meeting_id = ?", Long.class, meetingId));
+        assertEquals(3_000_000_001L, jdbc.queryForObject(
+            "SELECT share_amount FROM expense_shares WHERE expense_id IN"
+                + " (SELECT id FROM expenses WHERE meeting_id = ?)", Long.class, meetingId));
+
+        assertSettlementAmounts(
+            List.of(List.of(hostMemberId, 3_000_000_001L, 0L),
+                List.of(secondMemberId, 0L, 3_000_000_001L), List.of(thirdMemberId, 0L, 0L)),
+            List.of(List.of(secondMemberId, hostMemberId, 3_000_000_001L)));
+    }
+
+    @Test
+    @DisplayName("균등 분담의 단위·차액 담당자가 지출 저장과 최종 정산에 그대로 반영된다")
+    void preservesEqualSplitRemainder() throws Exception {
+        mvc.perform(post("/api/meetings/" + meetingId + "/expenses")
+                .header(AUTHORIZATION, bearer(host)).contentType(APPLICATION_JSON).content("""
+                    {"title":"균등 분담","amount":10000,"splitMode":"EQUAL","roundingUnit":100,
+                     "remainderMemberId":%d,"randomRemainder":false,"participants":[
+                        {"memberId":%d},{"memberId":%d},{"memberId":%d}]}
+                    """.formatted(thirdMemberId, hostMemberId, secondMemberId, thirdMemberId)))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.data.remainderMemberId").value(thirdMemberId))
+            .andExpect(jsonPath("$.data.participants.length()").value(3))
+            .andExpect(jsonPath("$.data.participants[0].memberId").value(hostMemberId))
+            .andExpect(jsonPath("$.data.participants[0].amount").value(3300))
+            .andExpect(jsonPath("$.data.participants[1].memberId").value(secondMemberId))
+            .andExpect(jsonPath("$.data.participants[1].amount").value(3300))
+            .andExpect(jsonPath("$.data.participants[2].memberId").value(thirdMemberId))
+            .andExpect(jsonPath("$.data.participants[2].amount").value(3400));
+        assertEquals(List.of(List.of(hostMemberId, 3_300L), List.of(secondMemberId, 3_300L),
+                List.of(thirdMemberId, 3_400L)),
+            jdbc.query("SELECT member_id, share_amount FROM expense_shares WHERE expense_id IN"
+                    + " (SELECT id FROM expenses WHERE meeting_id = ?) ORDER BY member_id",
+                (rs, row) -> List.of(rs.getLong(1), rs.getLong(2)), meetingId));
+
+        assertSettlementAmounts(
+            List.of(List.of(hostMemberId, 10_000L, 3_300L), List.of(secondMemberId, 0L, 3_300L),
+                List.of(thirdMemberId, 0L, 3_400L)),
+            List.of(List.of(secondMemberId, hostMemberId, 3_300L), List.of(thirdMemberId, hostMemberId, 3_400L)));
+    }
+
+    private void assertSettlementAmounts(List<List<Long>> balances, List<List<Long>> transfers) throws Exception {
+        assertResponseAmounts(mvc.perform(get(url + "/preview").header(AUTHORIZATION, bearer(host))), balances, transfers);
+        mvc.perform(put(url + "/account").header(AUTHORIZATION, bearer(host)).contentType(APPLICATION_JSON)
+                .content("""
+                    {"bankName":"국민은행","accountNumber":"123-456","accountHolder":"모임장"}
+                    """))
+            .andExpect(status().isOk());
+        assertResponseAmounts(mvc.perform(post(url + "/confirm").header(AUTHORIZATION, bearer(host))), balances, transfers);
+
+        long settlementId = jdbc.queryForObject(
+            "SELECT id FROM settlements WHERE meeting_id = ?", Long.class, meetingId);
+        assertEquals(balances, jdbc.query(
+            "SELECT member_id, paid_amount, share_amount FROM settlement_balances"
+                + " WHERE settlement_id = ? ORDER BY balance_order",
+            (rs, row) -> List.of(rs.getLong(1), rs.getLong(2), rs.getLong(3)), settlementId));
+        assertEquals(transfers, jdbc.query(
+            "SELECT sender_id, recipient_id, amount FROM settlement_transfers"
+                + " WHERE settlement_id = ? ORDER BY transfer_order",
+            (rs, row) -> List.of(rs.getLong(1), rs.getLong(2), rs.getLong(3)), settlementId));
+        // 별도 HTTP 요청으로 저장된 결과를 다시 읽어 응답 변환까지 확인한다.
+        assertResponseAmounts(mvc.perform(get(url).header(AUTHORIZATION, bearer(second))), balances, transfers);
+    }
+
+    private void assertResponseAmounts(ResultActions result, List<List<Long>> balances, List<List<Long>> transfers)
+            throws Exception {
+        result.andExpect(status().isOk())
+            .andExpect(jsonPath("$.data.balances.length()").value(balances.size()))
+            .andExpect(jsonPath("$.data.transfers.length()").value(transfers.size()));
+        for (int index = 0; index < balances.size(); index++) {
+            List<Long> balance = balances.get(index);
+            String path = "$.data.balances[" + index + "]";
+            result.andExpect(jsonPath(path + ".memberId").value(equalTo(balance.get(0)), Long.class))
+                .andExpect(jsonPath(path + ".paidAmount").value(equalTo(balance.get(1)), Long.class))
+                .andExpect(jsonPath(path + ".shareAmount").value(equalTo(balance.get(2)), Long.class));
+        }
+        for (int index = 0; index < transfers.size(); index++) {
+            List<Long> transfer = transfers.get(index);
+            String path = "$.data.transfers[" + index + "]";
+            result.andExpect(jsonPath(path + ".senderId").value(equalTo(transfer.get(0)), Long.class))
+                .andExpect(jsonPath(path + ".recipientId").value(equalTo(transfer.get(1)), Long.class))
+                .andExpect(jsonPath(path + ".amount").value(equalTo(transfer.get(2)), Long.class));
+        }
     }
 
     private void createExpense(User payer, String title, long amount, Map<Long, Long> shares) throws Exception {

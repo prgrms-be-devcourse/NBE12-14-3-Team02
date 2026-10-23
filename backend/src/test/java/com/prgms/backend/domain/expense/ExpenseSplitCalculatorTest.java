@@ -73,6 +73,24 @@ class ExpenseSplitCalculatorTest {
         }
     }
 
+    @Test @DisplayName("총금액의 소수 부분을 버리지 않고 거절한다")
+    void rejectsFractionalTotal() {
+        var request = new ExpenseCreateRequest("식사", new BigDecimal("10000.5"), null,
+                SplitMode.EXACT, null, null,
+                List.of(new Participant(1L, BigDecimal.valueOf(10_000))), false);
+
+        assertThrows(ArithmeticException.class, () -> calculator.calculate(request));
+    }
+
+    @Test @DisplayName("개인 부담액의 소수 부분을 버리지 않고 거절한다")
+    void rejectsFractionalShare() {
+        // 소수를 잘라버리면 합계가 10,000원이 되어 정상 처리될 수 있는 입력이다.
+        var request = exact(List.of(new Participant(1L, new BigDecimal("5000.5")),
+                new Participant(2L, new BigDecimal("5000.5"))));
+
+        assertThrows(ArithmeticException.class, () -> calculator.calculate(request));
+    }
+
     private ExpenseCreateRequest equal(long amount, int unit, Long remainder, boolean random) {
         return new ExpenseCreateRequest("식사", BigDecimal.valueOf(amount), null, SplitMode.EQUAL, unit, remainder, participants, random);
     }
