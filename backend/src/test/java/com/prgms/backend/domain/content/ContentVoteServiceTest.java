@@ -29,6 +29,7 @@ import java.util.Optional;
 import static com.prgms.backend.domain.schedule.support.ScheduleTestFixtures.meeting;
 import static com.prgms.backend.domain.schedule.support.ScheduleTestFixtures.member;
 import static com.prgms.backend.domain.schedule.support.ScheduleTestFixtures.user;
+import static com.prgms.backend.support.AuditFields.filled;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -72,7 +73,7 @@ class ContentVoteServiceTest {
         when(contentVoteRepository.findByContentCandidateIdAndMeetingMemberId(CANDIDATE_ID, MEMBER_ID))
                 .thenReturn(Optional.empty());
         when(contentVoteRepository.save(any(ContentVote.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
+                .thenAnswer(invocation -> filled(invocation.getArgument(0)));
     }
 
     private ContentPoll poll(long id) {
@@ -107,7 +108,7 @@ class ContentVoteServiceTest {
     void changeExistingVote() {
 
         // given
-        ContentVote existing = new ContentVote(candidate, MEMBER_ID, ContentPreference.PREFER);
+        ContentVote existing = filled(new ContentVote(candidate, MEMBER_ID, ContentPreference.PREFER));
         when(contentVoteRepository.findByContentCandidateIdAndMeetingMemberId(CANDIDATE_ID, MEMBER_ID))
                 .thenReturn(Optional.of(existing));
 
