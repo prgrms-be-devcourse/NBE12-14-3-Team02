@@ -25,6 +25,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.Optional;
 
+import static com.prgms.backend.support.AuditFields.filled;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -97,7 +98,7 @@ class MeetingInvitationServiceTest {
                 100L
             );
 
-            return invitation;
+            return filled(invitation);
         });
 
         // when
@@ -880,6 +881,6 @@ class MeetingInvitationServiceTest {
             id
         );
 
-        return invitation;
+        return filled(invitation);
     }
 }
