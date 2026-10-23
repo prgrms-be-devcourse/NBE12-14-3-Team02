@@ -14,7 +14,6 @@ class ContentPollResponse private constructor() {
         val confirmedCandidateId: Long?,
     ) {
         companion object {
-            @JvmStatic
             fun from(contentPoll: ContentPoll): Created =
                 Created(
                     id = contentPoll.id,
@@ -50,7 +49,6 @@ class ContentPollResponse private constructor() {
         val confirmedCandidateId: Long?,
     ) {
         companion object {
-            @JvmStatic
             fun from(contentPoll: ContentPoll): DeadlineUpdate =
                 DeadlineUpdate(
                     id = contentPoll.id,
@@ -69,7 +67,6 @@ class ContentPollResponse private constructor() {
         val confirmedCandidateId: Long?,
     ) {
         companion object {
-            @JvmStatic
             fun from(contentPoll: ContentPoll): Confirmed =
                 Confirmed(
                     id = contentPoll.id,
