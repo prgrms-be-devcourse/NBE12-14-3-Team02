@@ -17,6 +17,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -42,6 +43,7 @@ class UserRepositoryTest extends MySqlContainerSupport {
         User found = userRepository.findById(user.getId()).orElseThrow();
 
         // then
+        assertNotEquals(0L, user.getId());
         assertEquals("user@test.com", found.getEmail());
         assertEquals("회원", found.getNickname());
         assertEquals("encoded-password", found.getPassword());

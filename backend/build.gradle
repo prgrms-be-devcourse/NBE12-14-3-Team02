@@ -25,6 +25,13 @@ kotlin {
     }
 }
 
+// Hibernate 프록시를 위해 JPA 엔티티를 open으로 컴파일한다.
+allOpen {
+    annotation 'jakarta.persistence.Entity'
+    annotation 'jakarta.persistence.MappedSuperclass'
+    annotation 'jakarta.persistence.Embeddable'
+}
+
 repositories {
     mavenCentral()
 }

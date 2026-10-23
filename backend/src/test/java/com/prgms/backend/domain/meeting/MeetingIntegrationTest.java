@@ -458,7 +458,7 @@ class MeetingIntegrationTest {
         MeetingMember saved = memberRecord(member);
         assertEquals(saved.getId().longValue(), response.path("id").asLong());
         assertEquals(meeting.getId().longValue(), response.path("meetingId").asLong());
-        assertEquals(member.getId().longValue(), response.path("userId").asLong());
+        assertEquals(member.getId(), response.path("userId").asLong());
         assertEquals("JOINED", response.path("status").asString());
         assertEquals(MeetingMemberStatus.JOINED, saved.getStatus());
         assertNotNull(saved.getJoinedAt());

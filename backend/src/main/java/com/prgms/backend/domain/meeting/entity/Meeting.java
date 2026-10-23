@@ -15,6 +15,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
+import java.util.Objects;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -53,7 +54,7 @@ public class Meeting extends BaseTimeEntity {
 
     // 이 모임에서 특정 모임원이 모임장인지 검사
     public boolean isHost(Long userId){
-        return this.host.getId().equals(userId);
+        return Objects.equals(this.host.getId(), userId);
     }
 
     // 모임 수정
