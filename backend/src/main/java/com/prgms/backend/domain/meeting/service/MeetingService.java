@@ -13,7 +13,7 @@ import com.prgms.backend.domain.meeting.repository.MeetingMemberRepository;
 import com.prgms.backend.domain.meeting.repository.MeetingRepository;
 import com.prgms.backend.domain.schedule.poll.entity.SchedulePollStatus;
 import com.prgms.backend.domain.schedule.poll.repository.SchedulePollRepository;
-import com.prgms.backend.domain.settlement.entity.SettlementStatus;
+import com.prgms.backend.domain.settlement.enums.SettlementStatus;
 import com.prgms.backend.domain.settlement.repository.SettlementRepository;
 import com.prgms.backend.domain.user.entity.User;
 import com.prgms.backend.domain.user.repository.UserRepository;

@@ -1,5 +1,6 @@
 package com.prgms.backend.domain.settlement.entity
 
+import com.prgms.backend.domain.settlement.enums.SettlementStatus
 import com.prgms.backend.global.exception.custom.settlement.SettlementAlreadyDoneException
 import com.prgms.backend.global.exception.custom.settlement.SettlementRequestException
 import jakarta.persistence.CollectionTable

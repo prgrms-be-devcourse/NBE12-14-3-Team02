@@ -4,7 +4,7 @@ import com.prgms.backend.domain.expense.entity.Expense;
 import com.prgms.backend.domain.expense.repository.ExpenseRepository;
 import com.prgms.backend.domain.settlement.integration.SettlementClosedEvent;
 import com.prgms.backend.domain.settlement.entity.Settlement;
-import com.prgms.backend.domain.settlement.entity.SettlementStatus;
+import com.prgms.backend.domain.settlement.enums.SettlementStatus;
 import com.prgms.backend.domain.settlement.integration.MeetingAccessPort;
 import com.prgms.backend.domain.settlement.repository.SettlementRepository;
 import com.prgms.backend.domain.settlement.service.SettlementCalculator;

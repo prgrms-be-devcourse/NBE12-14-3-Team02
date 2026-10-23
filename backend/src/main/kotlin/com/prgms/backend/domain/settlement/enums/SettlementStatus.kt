@@ -1,4 +1,4 @@
-package com.prgms.backend.domain.settlement.entity
+package com.prgms.backend.domain.settlement.enums
 
 // 정산 상시 open, 모임장이 정산 확정 시 closed
 enum class SettlementStatus {
