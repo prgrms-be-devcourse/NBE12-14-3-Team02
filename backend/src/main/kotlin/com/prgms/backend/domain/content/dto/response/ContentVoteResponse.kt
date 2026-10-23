@@ -14,7 +14,6 @@ class ContentVoteResponse private constructor() {
         val updatedAt: LocalDateTime,
     ) {
         companion object {
-            @JvmStatic
             fun from(contentVote: ContentVote): Saved =
                 Saved(
                     voteId = contentVote.id,
