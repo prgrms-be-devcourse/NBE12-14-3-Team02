@@ -61,8 +61,8 @@ class UserServiceTest {
         ProfileResponse response = userService.getProfile(1L);
 
         // then
-        assertEquals("user@test.com", response.email());
-        assertEquals("회원", response.nickname());
+        assertEquals("user@test.com", response.getEmail());
+        assertEquals("회원", response.getNickname());
     }
 
     @Test
@@ -92,8 +92,8 @@ class UserServiceTest {
 
         // then
         assertEquals("새닉네임", user.getNickname());
-        assertEquals("user@test.com", response.email());
-        assertEquals("새닉네임", response.nickname());
+        assertEquals("user@test.com", response.getEmail());
+        assertEquals("새닉네임", response.getNickname());
     }
 
     @Test

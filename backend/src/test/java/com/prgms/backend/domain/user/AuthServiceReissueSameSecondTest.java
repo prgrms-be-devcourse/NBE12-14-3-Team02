@@ -85,11 +85,11 @@ class AuthServiceReissueSameSecondTest {
         TokenPair reissued = authService.reissue(oldRefreshToken);
 
         // then
-        assertNotEquals(oldRefreshToken, reissued.refreshToken());
-        assertEquals(reissued.refreshToken(), user.getRefreshToken());
-        assertSameIssueTime(oldRefreshToken, reissued.refreshToken());
-        assertTrue(jwtTokenProvider.validateAccessToken(reissued.accessToken()));
-        assertEquals(1L, jwtTokenProvider.getAccessUserId(reissued.accessToken()));
+        assertNotEquals(oldRefreshToken, reissued.getRefreshToken());
+        assertEquals(reissued.getRefreshToken(), user.getRefreshToken());
+        assertSameIssueTime(oldRefreshToken, reissued.getRefreshToken());
+        assertTrue(jwtTokenProvider.validateAccessToken(reissued.getAccessToken()));
+        assertEquals(1L, jwtTokenProvider.getAccessUserId(reissued.getAccessToken()));
     }
 
     @Test
@@ -103,8 +103,8 @@ class AuthServiceReissueSameSecondTest {
 
         // when & then
         assertThrows(ReissueFailException.class, () -> authService.reissue(oldRefreshToken));
-        assertEquals(reissued.refreshToken(), user.getRefreshToken());
-        assertDoesNotThrow(() -> authService.reissue(reissued.refreshToken()));
+        assertEquals(reissued.getRefreshToken(), user.getRefreshToken());
+        assertDoesNotThrow(() -> authService.reissue(reissued.getRefreshToken()));
     }
 
     private void assertSameIssueTime(String first, String second) {
