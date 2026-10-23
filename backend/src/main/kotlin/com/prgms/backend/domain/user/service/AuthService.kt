@@ -1,0 +1,156 @@
+package com.prgms.backend.domain.user.service
+
+import com.prgms.backend.domain.user.dto.TokenPair
+import com.prgms.backend.domain.user.dto.request.LogInRequest
+import com.prgms.backend.domain.user.entity.User
+import com.prgms.backend.domain.user.enums.UserStatus
+import com.prgms.backend.domain.user.repository.UserRepository
+import com.prgms.backend.domain.user.repository.getUser
+import com.prgms.backend.global.exception.custom.user.DuplicateEmailNickname
+import com.prgms.backend.global.exception.custom.user.LoginFailException
+import com.prgms.backend.global.exception.custom.user.PasswordMismatchException
+import com.prgms.backend.global.exception.custom.user.ReissueFailException
+import com.prgms.backend.global.exception.custom.user.UserNotFoundException
+import com.prgms.backend.global.exception.custom.user.WithdrawUserException
+import com.prgms.backend.security.JwtTokenProvider
+import org.hibernate.exception.ConstraintViolationException
+import org.springframework.dao.DataIntegrityViolationException
+import org.springframework.security.crypto.password.PasswordEncoder
+import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
+
+@Service
+class AuthService(
+    private val userRepository: UserRepository,
+    private val passwordEncoder: PasswordEncoder,
+    private val jwtTokenProvider: JwtTokenProvider,
+) {
+    companion object {
+        // Flyway V1에서 정의한 users 테이블의 UNIQUE 제약 이름
+        private const val EMAIL_UNIQUE_CONSTRAINT = "UK6dotkott2kjsp8vw4d0m25fb7"
+        private const val NICKNAME_UNIQUE_CONSTRAINT = "UK2ty1xmrrgtn89xt7kyxx6ta7h"
+
+        // MySQL은 제약 이름 앞에 테이블 이름을 붙여 반환하기도 한다.
+        private val DUPLICATE_CONSTRAINT_NAMES =
+            setOf(
+                EMAIL_UNIQUE_CONSTRAINT,
+                NICKNAME_UNIQUE_CONSTRAINT,
+                "users.$EMAIL_UNIQUE_CONSTRAINT",
+                "users.$NICKNAME_UNIQUE_CONSTRAINT",
+            )
+    }
+
+    // 이메일 중복 체크
+    fun checkEmail(email: String): Boolean = userRepository.existsByEmail(email)
+
+    // 닉네임 중복 체크
+    fun checkNickname(nickname: String): Boolean = userRepository.existsByNickname(nickname)
+
+    // 회원가입에서 비밀번호와 비밀번호 확인이 일치하는지 확인
+    fun validateConfirmPassword(
+        password: String,
+        confirmPassword: String?,
+    ) {
+        if (password != confirmPassword) {
+            throw PasswordMismatchException()
+        }
+    }
+
+    // 회원가입
+    @Transactional
+    fun signup(
+        email: String,
+        nickname: String,
+        password: String,
+        confirmPassword: String?,
+    ): Long {
+        validateConfirmPassword(password, confirmPassword)
+
+        if (checkEmail(email) || checkNickname(nickname)) {
+            throw DuplicateEmailNickname()
+        }
+        val encodedPassword = checkNotNull(passwordEncoder.encode(password)) { "비밀번호 암호화 결과가 없습니다." }
+        val user = User(email, nickname, encodedPassword)
+
+        try {
+            userRepository.saveAndFlush(user)
+        } catch (e: DataIntegrityViolationException) {
+            if (isDuplicateEmailOrNickname(e)) {
+                throw DuplicateEmailNickname()
+            }
+            throw e
+        }
+        return user.id
+    }
+
+    private fun isDuplicateEmailOrNickname(exception: DataIntegrityViolationException): Boolean {
+        val violation =
+            generateSequence<Throwable>(exception) { it.cause }
+                .filterIsInstance<ConstraintViolationException>()
+                .firstOrNull()
+                ?: return false
+        return violation.constraintName in DUPLICATE_CONSTRAINT_NAMES
+    }
+
+    // 로그인
+    @Transactional
+    fun login(request: LogInRequest): TokenPair {
+        val email = checkNotNull(request.email) { "검증을 통과한 로그인 요청에는 이메일이 있어야 합니다." }
+        val user =
+            userRepository.findByEmail(email)
+                ?: throw UserNotFoundException("가입되지 않은 이메일입니다.")
+
+        if (!passwordEncoder.matches(request.password, user.password)) {
+            throw LoginFailException()
+        }
+
+        // 비밀번호 확인 후 검사해야 탈퇴 여부가 외부에 노출되지 않음
+        if (user.status == UserStatus.WITHDRAWN || user.deletedAt != null) {
+            throw WithdrawUserException()
+        }
+
+        val accessToken = jwtTokenProvider.createAccessToken(user.id)
+        val refreshToken = jwtTokenProvider.createRefreshToken(user.id)
+
+        user.updateRefreshToken(refreshToken)
+
+        return TokenPair(accessToken, refreshToken)
+    }
+
+    // access token, refresh token 재발급
+    @Transactional
+    fun reissue(refreshToken: String?): TokenPair {
+        if (jwtTokenProvider.validateRefreshToken(refreshToken)) {
+            val userId = jwtTokenProvider.getRefreshUserId(refreshToken)
+
+            val user = userRepository.getUser(userId, "회원 정보를 찾을 수 없습니다.")
+
+            if (user.status == UserStatus.WITHDRAWN || user.deletedAt != null) {
+                throw WithdrawUserException()
+            }
+
+            if (refreshToken == user.refreshToken) {
+                val newAccessToken = jwtTokenProvider.createAccessToken(userId)
+                val newRefreshToken = jwtTokenProvider.createRefreshToken(userId)
+                user.updateRefreshToken(newRefreshToken)
+
+                return TokenPair(newAccessToken, newRefreshToken)
+            }
+        }
+
+        throw ReissueFailException()
+    }
+
+    // 로그아웃
+    @Transactional
+    fun logout(
+        userId: Long,
+        refreshToken: String?,
+    ) {
+        val user = userRepository.getUser(userId, "회원 정보를 찾을 수 없습니다.")
+
+        if (refreshToken == user.refreshToken) {
+            user.updateRefreshToken(null)
+        }
+    }
+}
