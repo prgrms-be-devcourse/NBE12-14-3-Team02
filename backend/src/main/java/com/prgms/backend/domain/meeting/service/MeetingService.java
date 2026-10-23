@@ -55,8 +55,8 @@ public class MeetingService {
         // 모임 객체 생성
         Meeting meeting = new Meeting(
             host,
-            request.name(),
-            request.description()
+            request.getName(),
+            request.getDescription()
         );
 
         // DB에 모임 객체 저장
@@ -172,8 +172,8 @@ public class MeetingService {
         }
 
         meeting.update(
-            request.name(),
-            request.description()
+            request.getName(),
+            request.getDescription()
         );
 
         return toResponse(meeting);
