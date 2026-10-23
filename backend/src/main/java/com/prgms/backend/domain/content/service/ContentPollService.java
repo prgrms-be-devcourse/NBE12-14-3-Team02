@@ -52,7 +52,7 @@ public class ContentPollService {
         }
 
         ContentPoll saved = contentPollRepository.save(
-                new ContentPoll(meetingId,request.deadline())
+                new ContentPoll(meetingId,request.getDeadline())
         );
 
         return ContentPollResponse.Created.from(saved);
@@ -101,7 +101,7 @@ public class ContentPollService {
                 .toList();
         if (closed) {
             ranked = ranked.stream()
-                    .sorted(Comparator.comparingInt(ContentPollResponse.CandidateRank::totalScore).reversed())
+                    .sorted(Comparator.comparingInt(ContentPollResponse.CandidateRank::getTotalScore).reversed())
                     .toList();
         }
 
@@ -138,7 +138,7 @@ public class ContentPollService {
         if(poll.getStatus() == ContentPollStatus.CLOSED){
             throw new ContentPollClosedException();
         }
-        poll.changeDeadLine(request.deadline());
+        poll.changeDeadLine(request.getDeadline());
         return ContentPollResponse.DeadlineUpdate.from(poll);
     }
     //해당 미팅멤버 반환하는 함수
@@ -234,7 +234,7 @@ public class ContentPollService {
                 .toList();
 
         List<Long> orderedCandidateIds = candidateResults.stream()
-                .map(ContentPollResultsResponse.CandidateResult::candidateId)
+                .map(ContentPollResultsResponse.CandidateResult::getCandidateId)
                 .toList();
 
         //후보마다 사람별 투표결과 집계
@@ -288,19 +288,19 @@ public class ContentPollService {
             ContentPollResultSort sort
     ){
         Comparator<ContentPollResultsResponse.CandidateResult> byCreated =
-                Comparator.comparing(ContentPollResultsResponse.CandidateResult::candidateId);
+                Comparator.comparing(ContentPollResultsResponse.CandidateResult::getCandidateId);
         if(sort == ContentPollResultSort.PARTICIPANTS){
             return Comparator
-                    .comparingInt(ContentPollResultsResponse.CandidateResult::responseCount)
+                    .comparingInt(ContentPollResultsResponse.CandidateResult::getResponseCount)
                     .reversed()
                     .thenComparing(Comparator
-                            .comparingInt(ContentPollResultsResponse.CandidateResult::totalScore)
+                            .comparingInt(ContentPollResultsResponse.CandidateResult::getTotalScore)
                             .reversed())
                     .thenComparing(byCreated);
         }
 
         return Comparator
-                .comparingInt(ContentPollResultsResponse.CandidateResult::totalScore)
+                .comparingInt(ContentPollResultsResponse.CandidateResult::getTotalScore)
                 .reversed()
                 .thenComparing(byCreated);
     }
@@ -332,13 +332,13 @@ public class ContentPollService {
             throw new ContentPollAlreadyConfirmedException();
         }
 
-        ContentCandidate candidate = contentCandidateRepository.findById(request.candidateId())
-                .orElseThrow(() -> new ContentCandidateNotFoundException(request.candidateId()));
+        ContentCandidate candidate = contentCandidateRepository.findById(request.getCandidateId())
+                .orElseThrow(() -> new ContentCandidateNotFoundException(request.getCandidateId()));
         if (candidate.getContentPoll().getId() != poll.getId()) {
-            throw new ContentCandidateNotFoundException(request.candidateId());
+            throw new ContentCandidateNotFoundException(request.getCandidateId());
         }
 
-        poll.confirm(request.candidateId());
+        poll.confirm(request.getCandidateId());
         return ContentPollResponse.Confirmed.from(poll);
     }
 

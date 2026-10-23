@@ -36,12 +36,12 @@ public class ContentCandidateService {
         Long meetingMemberId = member.getId();
         ContentPoll poll = getOpenPoll(meetingId);
 
-        if(contentCandidateRepository.existsByContentPollIdAndTitle(poll.getId(), request.title())){
-            throw new DuplicateContentCandidateTitleException(request.title());
+        if(contentCandidateRepository.existsByContentPollIdAndTitle(poll.getId(), request.getTitle())){
+            throw new DuplicateContentCandidateTitleException(request.getTitle());
         }
 
         ContentCandidate saved = contentCandidateRepository.save(
-                new ContentCandidate(poll,meetingMemberId, request.title(), request.description())
+                new ContentCandidate(poll,meetingMemberId, request.getTitle(), request.getDescription())
         );
         return ContentCandidateResponse.Saved.from(saved);
     }
@@ -70,12 +70,12 @@ public class ContentCandidateService {
         }
         //수정하려는 제목이 다른 후보와 중복되면 예외
         if(contentCandidateRepository.existsByContentPollIdAndTitleAndIdNot(
-                poll.getId(), request.title(), candidateId
+                poll.getId(), request.getTitle(), candidateId
         )){
-            throw new DuplicateContentCandidateTitleException(request.title());
+            throw new DuplicateContentCandidateTitleException(request.getTitle());
         }
 
-        candidate.update(request.title(), request.description());
+        candidate.update(request.getTitle(), request.getDescription());
         return ContentCandidateResponse.Saved.from(candidate);
     }
 
