@@ -15,16 +15,12 @@ import com.prgms.backend.domain.content.repository.ContentVoteRepository;
 import com.prgms.backend.domain.content.service.ContentPollService;
 import com.prgms.backend.domain.meeting.entity.Meeting;
 import com.prgms.backend.domain.meeting.entity.MeetingMember;
-import com.prgms.backend.domain.meeting.enums.MeetingMemberStatus;
 import com.prgms.backend.domain.meeting.repository.MeetingMemberRepository;
 import com.prgms.backend.domain.meeting.repository.MeetingRepository;
-import com.prgms.backend.global.exception.custom.content.ContentCandidateNotFoundException;
 import com.prgms.backend.global.exception.custom.content.ContentPollAlreadyConfirmedException;
 import com.prgms.backend.global.exception.custom.content.ContentPollAlreadyExistsException;
 import com.prgms.backend.global.exception.custom.content.ContentPollClosedException;
-import com.prgms.backend.global.exception.custom.content.ContentPollNotClosedException;
 import com.prgms.backend.global.exception.custom.meeting.MeetingAccessDeniedException;
-import com.prgms.backend.global.exception.custom.meeting.MeetingNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -80,11 +76,11 @@ class ContentPollServiceTest {
         poll = poll(LocalDateTime.now().plusDays(1));
 
         when(meetingRepository.findById(MEETING_ID)).thenReturn(Optional.of(meeting));
-        when(meetingRepository.findByIdAndDeletedAtIsNullForShare(MEETING_ID)).thenReturn(Optional.of(meeting));
+        when(meetingRepository.findByIdAndDeletedAtIsNullForShare(MEETING_ID)).thenReturn(meeting);
         when(contentPollRepository.findByMeetingId(MEETING_ID)).thenReturn(Optional.of(poll));
         when(contentPollRepository.findByMeetingIdForUpdate(MEETING_ID)).thenReturn(Optional.of(poll));
-        when(meetingMemberRepository.findByMeetingIdAndUserId(MEETING_ID, HOST_ID)).thenReturn(Optional.of(hostMember));
-        when(meetingMemberRepository.findByMeetingIdAndUserId(MEETING_ID, 2L)).thenReturn(Optional.of(member));
+        when(meetingMemberRepository.findByMeetingIdAndUserId(MEETING_ID, HOST_ID)).thenReturn(hostMember);
+        when(meetingMemberRepository.findByMeetingIdAndUserId(MEETING_ID, 2L)).thenReturn(member);
         when(meetingMemberRepository.findAllByMeetingId(MEETING_ID))
                 .thenReturn(List.of(hostMember, member));
     }

@@ -1,6 +1,5 @@
 package com.prgms.backend.domain.user.service;
 
-import com.prgms.backend.domain.meeting.entity.Meeting;
 import com.prgms.backend.domain.meeting.entity.MeetingMember;
 import com.prgms.backend.domain.meeting.enums.MeetingMemberStatus;
 import com.prgms.backend.domain.meeting.enums.MeetingStatus;

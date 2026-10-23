@@ -94,14 +94,19 @@ public class SchedulePollService {
     }
 
     private Meeting getMeetingWithExclusiveLock(Long meetingId){
-        return meetingRepository
-                .findByIdAndDeletedAtIsNullForUpdate(meetingId)
-                .orElseThrow(() -> new MeetingNotFoundException(meetingId));
+        Meeting meeting = meetingRepository.findByIdAndDeletedAtIsNullForUpdate(meetingId);
+        if (meeting == null) {
+            throw new MeetingNotFoundException(meetingId);
+        }
+        return meeting;
     }
 
     private Meeting getMeetingWithSharedLock(Long meetingId){
-        return meetingRepository.findByIdAndDeletedAtIsNullForShare(meetingId)
-                .orElseThrow(() -> new MeetingNotFoundException(meetingId));
+        Meeting meeting = meetingRepository.findByIdAndDeletedAtIsNullForShare(meetingId);
+        if (meeting == null) {
+            throw new MeetingNotFoundException(meetingId);
+        }
+        return meeting;
     }
 
     private void validateNoExistingPoll(Long meetingId){
@@ -111,23 +116,19 @@ public class SchedulePollService {
     }
 
     private void validateJoinedMember(Long meetingId, Long userId){
-        MeetingMember meetingMember =
-                meetingMemberRepository.findByMeetingIdAndUserId(meetingId, userId)
-                        .orElseThrow(
-                                () -> new MeetingMemberNotFoundException(
-                                        meetingId,
-                                        userId
-                                )
-                        );
+        MeetingMember meetingMember = meetingMemberRepository.findByMeetingIdAndUserId(meetingId, userId);
+        if (meetingMember == null) {
+            throw new MeetingMemberNotFoundException(meetingId, userId);
+        }
         if(!meetingMember.isJoined()){
             throw new MeetingMemberAlreadyLeftException(meetingId, userId);
         }
     }
 
     private void validateMeetingExists(Long meetingId){
-        meetingRepository
-                .findByIdAndDeletedAtIsNull(meetingId)
-                .orElseThrow(() -> new MeetingNotFoundException(meetingId));
+        if (meetingRepository.findByIdAndDeletedAtIsNull(meetingId) == null) {
+            throw new MeetingNotFoundException(meetingId);
+        }
     }
 
     private SchedulePoll getPollWithCandidates(Long meetingId){

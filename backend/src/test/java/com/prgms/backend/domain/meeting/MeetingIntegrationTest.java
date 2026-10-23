@@ -246,8 +246,9 @@ class MeetingIntegrationTest {
         Long meetingId = data(result).path("id").asLong();
         flushAndClear();
         assertEquals("부산 여행", meetings.findById(meetingId).orElseThrow().getName());
-        assertEquals(MeetingMemberStatus.JOINED,
-            members.findByMeetingIdAndUserId(meetingId, host.getId()).orElseThrow().getStatus());
+        MeetingMember registeredHost = members.findByMeetingIdAndUserId(meetingId, host.getId());
+        assertNotNull(registeredHost);
+        assertEquals(MeetingMemberStatus.JOINED, registeredHost.getStatus());
         assertEquals(1L, members.countByMeetingIdAndStatus(meetingId, MeetingMemberStatus.JOINED));
     }
 
@@ -511,7 +512,7 @@ class MeetingIntegrationTest {
         assertError(mvc.perform(get("/api/invitations/" + code).header(AUTHORIZATION, bearer(member))), 404);
         assertError(mvc.perform(post("/api/invitations/" + code + "/join")
             .header(AUTHORIZATION, bearer(member))), 404);
-        assertTrue(members.findByMeetingIdAndUserId(meeting.getId(), member.getId()).isEmpty());
+        assertNull(members.findByMeetingIdAndUserId(meeting.getId(), member.getId()));
     }
 
     @Test
@@ -553,7 +554,7 @@ class MeetingIntegrationTest {
             .header(AUTHORIZATION, bearer(member))), 410);
         assertError(mvc.perform(post("/api/invitations/expired-code/join")
             .header(AUTHORIZATION, bearer(member))), 410);
-        assertTrue(members.findByMeetingIdAndUserId(meeting.getId(), member.getId()).isEmpty());
+        assertNull(members.findByMeetingIdAndUserId(meeting.getId(), member.getId()));
     }
 
     @Test
@@ -625,7 +626,7 @@ class MeetingIntegrationTest {
             .header(AUTHORIZATION, bearer(member))), 409);
         assertError(mvc.perform(delete(url + "/invitations/" + invitation.path("id").asLong())
             .header(AUTHORIZATION, bearer(host))), 409);
-        assertTrue(members.findByMeetingIdAndUserId(meeting.getId(), member.getId()).isEmpty());
+        assertNull(members.findByMeetingIdAndUserId(meeting.getId(), member.getId()));
         assertTrue(invitations.existsById(invitation.path("id").asLong()));
     }
 
@@ -637,7 +638,7 @@ class MeetingIntegrationTest {
         flushAndClear();
         assertError(mvc.perform(post("/api/invitations/" + code + "/join")
             .header(AUTHORIZATION, bearer(member))), 404);
-        assertTrue(members.findByMeetingIdAndUserId(meeting.getId(), member.getId()).isEmpty());
+        assertNull(members.findByMeetingIdAndUserId(meeting.getId(), member.getId()));
     }
 
     // 모임원 API: 목록, 탈퇴, 재가입
@@ -804,7 +805,9 @@ class MeetingIntegrationTest {
     }
 
     private MeetingMember memberRecord(User user) {
-        return members.findByMeetingIdAndUserId(meeting.getId(), user.getId()).orElseThrow();
+        MeetingMember membership = members.findByMeetingIdAndUserId(meeting.getId(), user.getId());
+        assertNotNull(membership);
+        return membership;
     }
 
     private long joinedCount() {

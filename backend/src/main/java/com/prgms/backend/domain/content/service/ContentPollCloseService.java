@@ -34,8 +34,7 @@ public class ContentPollCloseService {
 
         // Meeting을 먼저 공유 잠금
         Meeting meeting = meetingRepository
-                .findByIdAndDeletedAtIsNullForShare(meetingId)
-                .orElse(null);
+                .findByIdAndDeletedAtIsNullForShare(meetingId);
 
         // 삭제된 모임
         if (meeting == null) {

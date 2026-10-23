@@ -48,8 +48,8 @@ class ScheduleResultServiceTest {
         Meeting meeting = meeting(10L, user(1L, "host"));
         poll = poll(20L, meeting, LocalDateTime.now().plusDays(3));
         host = member(30L, meeting, meeting.getHost());
-        when(meetings.findByIdAndDeletedAtIsNull(10L)).thenReturn(Optional.of(meeting));
-        when(members.findByMeetingIdAndUserId(10L, 1L)).thenReturn(Optional.of(host));
+        when(meetings.findByIdAndDeletedAtIsNull(10L)).thenReturn(meeting);
+        when(members.findByMeetingIdAndUserId(10L, 1L)).thenReturn(host);
         when(polls.findByMeetingId(10L)).thenReturn(Optional.of(poll));
     }
 

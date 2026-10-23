@@ -266,7 +266,8 @@ class ScheduleControllerIntegrationTest {
             ScheduleCandidate unanswered = addCandidate(poll, candidateDate.plusDays(2));
             ScheduleCandidate second = addCandidate(poll, candidateDate.plusDays(1));
             ScheduleCandidate first = addCandidate(poll, candidateDate);
-            MeetingMember hostMember = members.findByMeetingIdAndUserId(meeting.getId(), host.getId()).orElseThrow();
+            MeetingMember hostMember = members.findByMeetingIdAndUserId(meeting.getId(), host.getId());
+            assertNotNull(hostMember);
             User thirdUser = users.save(new User("third-" + host.getEmail(), "third", "password"));
             members.save(new MeetingMember(meeting, thirdUser));
             // 외부 사용자가 가입·응답 후 탈퇴한 상황이다.

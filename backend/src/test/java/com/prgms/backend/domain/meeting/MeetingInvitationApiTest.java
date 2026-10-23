@@ -63,10 +63,10 @@ class MeetingInvitationApiTest {
         MeetingInvitation invitation = new MeetingInvitation(
             meeting, "invite-code", LocalDateTime.now().plusDays(1));
         when(invitations.findMeetingIdByInviteCode("invite-code")).thenReturn(10L);
-        when(meetings.findByIdAndDeletedAtIsNullForUpdate(10L)).thenReturn(Optional.of(meeting));
+        when(meetings.findByIdAndDeletedAtIsNullForUpdate(10L)).thenReturn(meeting);
         when(invitations.findByInviteCode("invite-code")).thenReturn(invitation);
         when(users.findById(2L)).thenReturn(Optional.of(user));
-        when(members.findByMeetingIdAndUserIdForUpdate(10L, 2L)).thenReturn(Optional.empty());
+        when(members.findByMeetingIdAndUserIdForUpdate(10L, 2L)).thenReturn(null);
         SecurityContextHolder.getContext().setAuthentication(
             new UsernamePasswordAuthenticationToken(new SecurityUser(2L), null, List.of()));
     }

@@ -15,7 +15,6 @@ import com.prgms.backend.global.exception.custom.meeting.AlreadyMeetingMemberExc
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Executors;
@@ -145,15 +144,16 @@ class MeetingInvitationConcurrencyIntegrationTest {
     void realDuplicateKeyBecomesConflict() {
         Long originalId = members.saveAndFlush(new MeetingMember(meeting, user)).getId();
         // 사전 조회로 걸러지지 않은 상황을 만들어 실제 INSERT 제약 위반 경로를 검증
-        doReturn(Optional.empty()).when(members)
+        doReturn(null).when(members)
             .findByMeetingIdAndUserIdForUpdate(meeting.getId(), user.getId());
 
         AlreadyMeetingMemberException exception = assertThrows(AlreadyMeetingMemberException.class,
             () -> service.joinMeeting(inviteCode, user.getId()));
 
         assertEquals(409, exception.getCode());
-        assertEquals(originalId, members.findByMeetingIdAndUserId(meeting.getId(), user.getId())
-            .orElseThrow().getId());
+        MeetingMember existingMember = members.findByMeetingIdAndUserId(meeting.getId(), user.getId());
+        assertNotNull(existingMember);
+        assertEquals(originalId, existingMember.getId());
         assertOneMembership(user.getId());
     }
 

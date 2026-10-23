@@ -22,7 +22,6 @@ import com.prgms.backend.global.exception.custom.user.UserNotFoundException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.hibernate.exception.ConstraintViolationException;
@@ -51,9 +50,10 @@ public class MeetingInvitationService {
         Long userId
     ){
         // 없는 미팅에 대한 초대인지 검사
-        Meeting meeting = meetingRepository
-            .findByIdAndDeletedAtIsNullForShare(meetingId)
-            .orElseThrow(() -> new MeetingNotFoundException(meetingId));
+        Meeting meeting = meetingRepository.findByIdAndDeletedAtIsNullForShare(meetingId);
+        if (meeting == null) {
+            throw new MeetingNotFoundException(meetingId);
+        }
 
         // 모임장이 아닌 사람이 초대를 생성하는지 검사
         if(!meeting.isHost(userId)){
@@ -99,9 +99,10 @@ public class MeetingInvitationService {
         }
 
         // 모임의 멤버 구성이 바뀌므로 WRITE LOCK
-        Meeting meeting = meetingRepository
-            .findByIdAndDeletedAtIsNullForUpdate(meetingId)
-            .orElseThrow(() -> new MeetingNotFoundException(meetingId));
+        Meeting meeting = meetingRepository.findByIdAndDeletedAtIsNullForUpdate(meetingId);
+        if (meeting == null) {
+            throw new MeetingNotFoundException(meetingId);
+        }
 
         // Lock 획득 후 Invitation 다시 확인
         MeetingInvitation invitation = meetingInvitationRepository
@@ -126,14 +127,14 @@ public class MeetingInvitationService {
             .orElseThrow(() -> new UserNotFoundException("존재하지 않는 회원입니다."));
 
         // MySQL REPEATABLE READ에서도 잠금 대기 중 커밋된 가입 상태를 확인
-        Optional<MeetingMember> existingMember = meetingMemberRepository
+        MeetingMember existingMember = meetingMemberRepository
             .findByMeetingIdAndUserIdForUpdate(meetingId, userId);
 
         MeetingMember meetingMember;
 
         // 모임원 목록에 있는 회원인 경우
-        if (existingMember.isPresent()) {
-            meetingMember = existingMember.get();
+        if (existingMember != null) {
+            meetingMember = existingMember;
 
             // 현재 참여 중인 모임원인 경우 중복 가입 차단
             if (meetingMember.isJoined()) {
@@ -179,9 +180,10 @@ public class MeetingInvitationService {
         Long userId
     ) {
         // 존재하는 모임인지 검사
-        Meeting meeting = meetingRepository
-            .findByIdAndDeletedAtIsNull(meetingId)
-            .orElseThrow(() -> new MeetingNotFoundException(meetingId));
+        Meeting meeting = meetingRepository.findByIdAndDeletedAtIsNull(meetingId);
+        if (meeting == null) {
+            throw new MeetingNotFoundException(meetingId);
+        }
 
         // 초대 코드 목록 조회를 시도하는 사람이 모임장인지 검사
         if (!meeting.isHost(userId)) {
@@ -262,9 +264,10 @@ public class MeetingInvitationService {
         Long userId
     ) {
         // 존재하는 모임인지 검사
-        Meeting meeting = meetingRepository
-            .findByIdAndDeletedAtIsNullForShare(meetingId)
-            .orElseThrow(() -> new MeetingNotFoundException(meetingId));
+        Meeting meeting = meetingRepository.findByIdAndDeletedAtIsNullForShare(meetingId);
+        if (meeting == null) {
+            throw new MeetingNotFoundException(meetingId);
+        }
 
         // 모임장만 초대 취소 가능
         if (!meeting.isHost(userId)) {

@@ -48,9 +48,10 @@ public class MeetingAccessAdapter implements MeetingAccessPort {
         if (meeting == null || meeting.isDeleted()) {
             throw new SettlementRequestException(404, "모임을 찾을 수 없습니다.");
         }
-        MeetingMember member = memberRepository.findByMeetingIdAndUserId(meetingId, userId)
-                .filter(MeetingMember::isJoined)
-                .orElseThrow(() -> new SettlementRequestException(403, "모임 참여자만 이용할 수 있습니다."));
+        MeetingMember member = memberRepository.findByMeetingIdAndUserId(meetingId, userId);
+        if (member == null || !member.isJoined()) {
+            throw new SettlementRequestException(403, "모임 참여자만 이용할 수 있습니다.");
+        }
 
         // 탈퇴한 사람도 과거 지출의 결제자나 부담자일 경우 정산 대상에는 포함
         Set<Long> memberIds = new HashSet<>(entityManager.createQuery(
