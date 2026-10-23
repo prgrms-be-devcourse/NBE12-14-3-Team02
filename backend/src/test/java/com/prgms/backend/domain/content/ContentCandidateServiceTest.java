@@ -30,6 +30,7 @@ import java.util.Optional;
 import static com.prgms.backend.domain.schedule.support.ScheduleTestFixtures.meeting;
 import static com.prgms.backend.domain.schedule.support.ScheduleTestFixtures.member;
 import static com.prgms.backend.domain.schedule.support.ScheduleTestFixtures.user;
+import static com.prgms.backend.support.AuditFields.filled;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -72,7 +73,7 @@ class ContentCandidateServiceTest {
         when(contentPollRepository.findByMeetingId(MEETING_ID)).thenReturn(Optional.of(poll));
         when(contentCandidateRepository.findById(CANDIDATE_ID)).thenReturn(Optional.of(candidate));
         when(contentCandidateRepository.save(any(ContentCandidate.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
+                .thenAnswer(invocation -> filled(invocation.getArgument(0)));
     }
 
     private ContentPoll poll(long id) {
@@ -84,7 +85,7 @@ class ContentCandidateServiceTest {
     private ContentCandidate candidate(long id, ContentPoll candidatePoll, long createdByMemberId, String title) {
         ContentCandidate contentCandidate = new ContentCandidate(candidatePoll, createdByMemberId, title, "설명");
         ReflectionTestUtils.setField(contentCandidate, "id", id);
-        return contentCandidate;
+        return filled(contentCandidate);
     }
 
     @Test
