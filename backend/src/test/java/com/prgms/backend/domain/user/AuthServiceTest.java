@@ -159,7 +159,7 @@ class AuthServiceTest {
     void login() {
 
         // given
-        when(userRepository.findByEmail("user@test.com")).thenReturn(Optional.of(user));
+        when(userRepository.findByEmail("user@test.com")).thenReturn(user);
         when(passwordEncoder.matches("password", "encoded-password")).thenReturn(true);
         when(jwtTokenProvider.createAccessToken(1L)).thenReturn("new-access-token");
         when(jwtTokenProvider.createRefreshToken(1L)).thenReturn("new-refresh-token");
@@ -178,7 +178,7 @@ class AuthServiceTest {
     void loginUserNotFound() {
 
         // given
-        when(userRepository.findByEmail("none@test.com")).thenReturn(Optional.empty());
+        when(userRepository.findByEmail("none@test.com")).thenReturn(null);
 
         // when & then
         assertThrows(
@@ -192,7 +192,7 @@ class AuthServiceTest {
     void loginWrongPassword() {
 
         // given
-        when(userRepository.findByEmail("user@test.com")).thenReturn(Optional.of(user));
+        when(userRepository.findByEmail("user@test.com")).thenReturn(user);
         when(passwordEncoder.matches("wrong", "encoded-password")).thenReturn(false);
 
         // when & then

@@ -51,7 +51,7 @@ class AuthServiceWithdrawnUserTest {
         withdrawnUser.updateDeletedAt(LocalDateTime.now());
 
         when(userRepository.findByEmail("user@test.com"))
-            .thenReturn(Optional.of(withdrawnUser));
+            .thenReturn(withdrawnUser);
     }
 
     @Test
