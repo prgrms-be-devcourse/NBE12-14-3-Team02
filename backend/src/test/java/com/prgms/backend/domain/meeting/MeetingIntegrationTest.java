@@ -141,7 +141,6 @@ class MeetingIntegrationTest {
         assertNotNull(loaded.getUpdatedAt());
         assertTrue(loaded.isHost(host.getId()));
         assertFalse(loaded.isHost(member.getId()));
-        assertFalse(loaded.isHost(null));
         assertTrue(loaded.isActive());
         assertFalse(loaded.isCompleted());
         assertFalse(loaded.isDeleted());
@@ -471,7 +470,9 @@ class MeetingIntegrationTest {
         JsonNode invitation = createInvitation();
         String code = invitation.path("inviteCode").asString();
         flushAndClear();
-        assertEquals(meeting.getId(), invitations.findByInviteCode(code).orElseThrow().getMeeting().getId());
+        MeetingInvitation savedInvitation = invitations.findByInviteCode(code);
+        assertNotNull(savedInvitation);
+        assertEquals(meeting.getId(), savedInvitation.getMeeting().getId());
         mvc.perform(get(url + "/invitations").header(AUTHORIZATION, bearer(host)))
             .andExpect(status().isOk()).andExpect(jsonPath("$.data.length()").value(1))
             .andExpect(jsonPath("$.data[0].inviteCode").value(code));

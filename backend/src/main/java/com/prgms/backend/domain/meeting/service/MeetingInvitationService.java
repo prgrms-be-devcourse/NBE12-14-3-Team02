@@ -93,8 +93,10 @@ public class MeetingInvitationService {
     ) {
         // 잠금 전에 모임 엔티티를 로딩하지 않도록 ID만 조회
         Long meetingId = meetingInvitationRepository
-            .findMeetingIdByInviteCode(inviteCode)
-            .orElseThrow(() -> new MeetingInvitationNotFoundException(inviteCode));
+            .findMeetingIdByInviteCode(inviteCode);
+        if (meetingId == null) {
+            throw new MeetingInvitationNotFoundException(inviteCode);
+        }
 
         // 모임의 멤버 구성이 바뀌므로 WRITE LOCK
         Meeting meeting = meetingRepository
@@ -103,8 +105,10 @@ public class MeetingInvitationService {
 
         // Lock 획득 후 Invitation 다시 확인
         MeetingInvitation invitation = meetingInvitationRepository
-            .findByInviteCode(inviteCode)
-            .orElseThrow(() -> new MeetingInvitationNotFoundException(inviteCode));
+            .findByInviteCode(inviteCode);
+        if (invitation == null) {
+            throw new MeetingInvitationNotFoundException(inviteCode);
+        }
 
         // 초대가 만료됐는지 검사
         if (invitation.isExpired()) {
@@ -227,10 +231,10 @@ public class MeetingInvitationService {
     private MeetingInvitation getValidInvitation(String inviteCode) {
         // 존재하는 초대인지 검사
         MeetingInvitation invitation = meetingInvitationRepository
-            .findByInviteCode(inviteCode)
-            .orElseThrow(
-                () -> new MeetingInvitationNotFoundException(inviteCode)
-            );
+            .findByInviteCode(inviteCode);
+        if (invitation == null) {
+            throw new MeetingInvitationNotFoundException(inviteCode);
+        }
 
         // 만료된 초대인지 검사
         if (invitation.isExpired()) {

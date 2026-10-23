@@ -41,6 +41,7 @@ import org.testcontainers.mysql.MySQLContainer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.doReturn;
 
@@ -166,7 +167,7 @@ class MeetingInvitationConcurrencyIntegrationTest {
                     try {
                         MeetingMemberResponse response = transactions.execute(status -> {
                             // 각 트랜잭션에서 실제 조회로 스냅샷을 만든 뒤 잠금 경쟁을 시작
-                            invitations.findMeetingIdByInviteCode(request.code()).orElseThrow();
+                            assertNotNull(invitations.findMeetingIdByInviteCode(request.code()));
                             assertDoesNotThrow(() -> snapshotsCreated.await(10, TimeUnit.SECONDS));
                             return service.joinMeeting(request.code(), request.userId());
                         });

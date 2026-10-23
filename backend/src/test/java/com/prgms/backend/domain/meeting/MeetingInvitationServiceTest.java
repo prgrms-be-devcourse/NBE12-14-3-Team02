@@ -173,12 +173,12 @@ class MeetingInvitationServiceTest {
 
         when(meetingInvitationRepository
             .findMeetingIdByInviteCode("invite-code"))
-            .thenReturn(Optional.of(10L));
+            .thenReturn(10L);
 
         when(
             meetingInvitationRepository
                 .findByInviteCode("invite-code")
-        ).thenReturn(Optional.of(invitation));
+        ).thenReturn(invitation);
 
         when(
             meetingRepository
@@ -278,12 +278,12 @@ class MeetingInvitationServiceTest {
 
         when(meetingInvitationRepository
             .findMeetingIdByInviteCode("invite-code"))
-            .thenReturn(Optional.of(10L));
+            .thenReturn(10L);
 
         when(
             meetingInvitationRepository
                 .findByInviteCode("invite-code")
-        ).thenReturn(Optional.of(invitation));
+        ).thenReturn(invitation);
 
         when(
             meetingRepository
@@ -357,12 +357,12 @@ class MeetingInvitationServiceTest {
 
         when(meetingInvitationRepository
             .findMeetingIdByInviteCode("invite-code"))
-            .thenReturn(Optional.of(10L));
+            .thenReturn(10L);
 
         when(
             meetingInvitationRepository
                 .findByInviteCode("invite-code")
-        ).thenReturn(Optional.of(invitation));
+        ).thenReturn(invitation);
 
         when(
             meetingRepository
@@ -494,7 +494,7 @@ class MeetingInvitationServiceTest {
         when(
             meetingInvitationRepository
                 .findByInviteCode("invite-code")
-        ).thenReturn(Optional.of(invitation));
+        ).thenReturn(invitation);
 
         when(
             meetingMemberRepository
@@ -561,7 +561,7 @@ class MeetingInvitationServiceTest {
         when(
             meetingInvitationRepository
                 .findByInviteCode("invite-code")
-        ).thenReturn(Optional.of(invitation));
+        ).thenReturn(invitation);
 
         when(
             meetingMemberRepository
