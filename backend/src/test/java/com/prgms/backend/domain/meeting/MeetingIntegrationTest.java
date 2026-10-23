@@ -27,6 +27,8 @@ import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -154,6 +156,17 @@ class MeetingIntegrationTest {
         assertEquals(before, meetings.count());
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = {"{}", "{\"name\":null}"})
+    @DisplayName("생성 요청의 모임 이름이 누락되거나 null이면 기존 검증 메시지로 거절한다")
+    void createMeeting_missingOrNullName(String body) throws Exception {
+        long before = meetings.count();
+        assertError(mvc.perform(post("/api/meetings").header(AUTHORIZATION, bearer(host))
+            .contentType(APPLICATION_JSON).content(body))
+            .andExpect(jsonPath("$.message").value("모임 이름은 필수입니다.")), 400);
+        assertEquals(before, meetings.count());
+    }
+
     @Test
     @DisplayName("100자를 초과한 모임 이름은 400으로 거절한다")
     void createMeeting_nameTooLong() throws Exception {
@@ -257,6 +270,17 @@ class MeetingIntegrationTest {
     void updateMeeting_blankName() throws Exception {
         assertError(mvc.perform(put(url).header(AUTHORIZATION, bearer(host)).contentType(APPLICATION_JSON)
             .content(jsonMapper.writeValueAsString(new MeetingUpdateRequest("", "설명")))), 400);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"{}", "{\"name\":null}"})
+    @DisplayName("수정 요청의 모임 이름이 누락되거나 null이면 기존 정보와 검증 메시지를 유지한다")
+    void updateMeeting_missingOrNullName(String body) throws Exception {
+        assertError(mvc.perform(put(url).header(AUTHORIZATION, bearer(host))
+            .contentType(APPLICATION_JSON).content(body))
+            .andExpect(jsonPath("$.message").value("모임 이름은 필수입니다.")), 400);
+        flushAndClear();
+        assertEquals("제주도 여행", meetings.findById(meeting.getId()).orElseThrow().getName());
     }
 
     @Test
