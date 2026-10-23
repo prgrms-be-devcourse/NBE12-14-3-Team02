@@ -1,0 +1,115 @@
+package com.prgms.backend.domain.user.controller
+
+import com.prgms.backend.domain.user.dto.request.LogInRequest
+import com.prgms.backend.domain.user.dto.response.LogInResponse
+import com.prgms.backend.domain.user.dto.response.ReissueResponse
+import com.prgms.backend.domain.user.entity.SecurityUser
+import com.prgms.backend.domain.user.service.AuthService
+import com.prgms.backend.global.ApiResponse
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.security.SecurityRequirements
+import jakarta.validation.Valid
+import org.springframework.http.HttpHeaders
+import org.springframework.http.HttpStatus
+import org.springframework.http.ResponseCookie
+import org.springframework.http.ResponseEntity
+import org.springframework.security.core.annotation.AuthenticationPrincipal
+import org.springframework.web.bind.annotation.CookieValue
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RestController
+import java.time.Duration
+
+@RestController
+@RequestMapping("/api/auth")
+class AuthController(
+    private val authService: AuthService,
+) {
+    @Operation(
+        summary = "로그인",
+        description = "이메일과 비밀번호로 로그인하고, 액세스 토큰과 리프레시 토큰(쿠키)을 발급받습니다.",
+    )
+    @SecurityRequirements
+    @PostMapping("/log-in")
+    fun login(
+        @Valid @RequestBody logInRequest: LogInRequest,
+    ): ResponseEntity<ApiResponse<LogInResponse>> {
+        val pair = authService.login(logInRequest)
+
+        val cookie =
+            ResponseCookie
+                .from("refreshToken", pair.refreshToken)
+                .httpOnly(true)
+                .secure(true)
+                .sameSite("Strict")
+                .path("/api/auth")
+                .maxAge(Duration.ofDays(14))
+                .build()
+
+        val response = LogInResponse(pair.accessToken)
+
+        return ResponseEntity
+            .status(HttpStatus.CREATED)
+            .header(HttpHeaders.SET_COOKIE, cookie.toString())
+            .body(ApiResponse.success(201, response))
+    }
+
+    @Operation(
+        summary = "액세스 토큰 재발급",
+        description = "쿠키로 전달된 리프레시 토큰을 검증하여 새로운 액세스 토큰을 발급합니다.",
+    )
+    @SecurityRequirements
+    @PostMapping("/reissue")
+    fun reissue(
+        @CookieValue(value = "refreshToken", required = false) refreshToken: String?,
+    ): ResponseEntity<ApiResponse<ReissueResponse>> {
+        val tokenPair = authService.reissue(refreshToken)
+
+        val cookie =
+            ResponseCookie
+                .from("refreshToken", tokenPair.refreshToken)
+                .httpOnly(true)
+                .secure(true)
+                .sameSite("Strict")
+                .path("/api/auth")
+                .maxAge(Duration.ofDays(14))
+                .build()
+
+        val response = ReissueResponse(tokenPair.accessToken)
+
+        return ResponseEntity
+            .status(HttpStatus.OK)
+            .header(HttpHeaders.SET_COOKIE, cookie.toString())
+            .body(ApiResponse.success(200, response))
+    }
+
+    @Operation(
+        summary = "로그아웃",
+        description = "저장된 리프레시 토큰을 무효화하고 리프레시 토큰 쿠키를 삭제합니다.",
+    )
+    @PostMapping("/logout")
+    fun logout(
+        @AuthenticationPrincipal securityUser: SecurityUser,
+        @CookieValue(value = "refreshToken", required = false) refreshToken: String?,
+    ): ResponseEntity<ApiResponse<*>> {
+        val userId = securityUser.id
+
+        authService.logout(userId, refreshToken)
+
+        val cookie =
+            ResponseCookie
+                .from("refreshToken", "")
+                .httpOnly(true)
+                .secure(true)
+                .sameSite("Strict")
+                .path("/api/auth") // 로그인 때 설정한 path와 반드시 동일해야 지워짐
+                .maxAge(0) // 즉시 만료
+                .build()
+
+        return ResponseEntity
+            .status(HttpStatus.OK)
+            .header(HttpHeaders.SET_COOKIE, cookie.toString())
+            .body(ApiResponse.success<Void>(200, "로그아웃 되었습니다.", null))
+    }
+}
