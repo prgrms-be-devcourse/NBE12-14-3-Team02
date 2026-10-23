@@ -13,7 +13,6 @@ class ContentCandidateResponse private constructor() {
         val createdAt: LocalDateTime,
     ) {
         companion object {
-            @JvmStatic
             fun from(candidate: ContentCandidate): Saved =
                 Saved(
                     candidateId = candidate.id,
