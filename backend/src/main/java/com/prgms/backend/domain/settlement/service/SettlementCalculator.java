@@ -39,7 +39,7 @@ public class SettlementCalculator {
         Set<Long> seenIds = new HashSet<>();
         for (Expense expense : expenses) {
             if (expense == null || !seenExpenses.add(expense)
-                    || (expense.getId() != null && !seenIds.add(expense.getId()))) {
+                    || (expense.getId() != 0L && !seenIds.add(expense.getId()))) {
                 throw new IllegalArgumentException("지출이 비어 있거나 중복되었습니다.");
             }
             validateExpense(meetingId, expense, memberIds);
@@ -61,7 +61,7 @@ public class SettlementCalculator {
     }
 
     private void validateExpense(long meetingId, Expense expense, Set<Long> memberIds) {
-        if (expense.getMeetingId() == null || expense.getMeetingId() != meetingId
+        if (expense.getMeetingId() != meetingId
                 || expense.getAmount() <= 0 || !memberIds.contains(expense.getPayerMemberId())
                 || expense.getParticipantIds().isEmpty()
                 || !memberIds.containsAll(expense.getParticipantIds())) {
