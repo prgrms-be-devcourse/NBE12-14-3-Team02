@@ -170,7 +170,7 @@ class MeetingInvitationConcurrencyIntegrationTest {
                             assertDoesNotThrow(() -> snapshotsCreated.await(10, TimeUnit.SECONDS));
                             return service.joinMeeting(request.code(), request.userId());
                         });
-                        return new JoinResult(200, response.id());
+                        return new JoinResult(200, response.getId());
                     } catch (AlreadyMeetingMemberException e) {
                         return new JoinResult(e.getCode(), null);
                     }

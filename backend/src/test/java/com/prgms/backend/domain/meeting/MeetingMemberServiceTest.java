@@ -124,11 +124,11 @@ class MeetingMemberServiceTest {
         assertEquals(originalJoinedAt, member.getJoinedAt());
 
         // then: 반환된 응답
-        assertEquals(200L, response.id());
-        assertEquals(10L, response.meetingId());
-        assertEquals(2L, response.userId());
-        assertEquals(MeetingMemberStatus.LEFT, response.status());
-        assertEquals(member.getLeftAt(), response.leftAt());
+        assertEquals(200L, response.getId());
+        assertEquals(10L, response.getMeetingId());
+        assertEquals(2L, response.getUserId());
+        assertEquals(MeetingMemberStatus.LEFT, response.getStatus());
+        assertEquals(member.getLeftAt(), response.getLeftAt());
 
         // then: 진행 중 투표 정리 요청
         verify(scheduleVoteRepository).deleteOpenVotesByMeetingMember(
@@ -185,7 +185,7 @@ class MeetingMemberServiceTest {
         // then
         assertEquals(MeetingMemberStatus.LEFT, hostMember.getStatus());
         assertNotNull(hostMember.getLeftAt());
-        assertEquals(100L, response.id());
+        assertEquals(100L, response.getId());
 
         // 모임 탈퇴가 모임 자체를 삭제하면 안 된다.
         assertTrue(meeting.isCompleted());
@@ -259,7 +259,7 @@ class MeetingMemberServiceTest {
         var response = meetingMemberService.leaveMeeting(10L, 2L);
 
         // then
-        assertEquals(MeetingMemberStatus.LEFT, response.status());
+        assertEquals(MeetingMemberStatus.LEFT, response.getStatus());
         assertNotNull(member.getLeftAt());
     }
 
@@ -280,7 +280,7 @@ class MeetingMemberServiceTest {
         var response = meetingMemberService.leaveMeeting(10L, 2L);
 
         // then
-        assertEquals(MeetingMemberStatus.LEFT, response.status());
+        assertEquals(MeetingMemberStatus.LEFT, response.getStatus());
         assertNotNull(member.getLeftAt());
 
         // CLOSED라면 지출 관련 여부로 탈퇴를 제한하지 않는다.
@@ -387,13 +387,13 @@ class MeetingMemberServiceTest {
         // then
         assertEquals(2, responses.size());
 
-        assertEquals(100L, responses.get(0).id());
-        assertEquals(1L, responses.get(0).userId());
-        assertEquals(MeetingMemberStatus.JOINED, responses.get(0).status());
+        assertEquals(100L, responses.get(0).getId());
+        assertEquals(1L, responses.get(0).getUserId());
+        assertEquals(MeetingMemberStatus.JOINED, responses.get(0).getStatus());
 
-        assertEquals(200L, responses.get(1).id());
-        assertEquals(2L, responses.get(1).userId());
-        assertEquals("일반 모임원", responses.get(1).nickname());
+        assertEquals(200L, responses.get(1).getId());
+        assertEquals(2L, responses.get(1).getUserId());
+        assertEquals("일반 모임원", responses.get(1).getNickname());
     }
 
     @Test
