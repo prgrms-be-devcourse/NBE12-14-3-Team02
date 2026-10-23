@@ -112,9 +112,9 @@ class ContentPollServiceTest {
                 new ContentPollRequest.Create(deadline));
 
         // then
-        assertEquals(MEETING_ID, created.meetingId());
-        assertEquals(deadline, created.deadline());
-        assertEquals(ContentPollStatus.OPEN, created.status());
+        assertEquals(MEETING_ID, created.getMeetingId());
+        assertEquals(deadline, created.getDeadline());
+        assertEquals(ContentPollStatus.OPEN, created.getStatus());
     }
 
     @Test
@@ -155,9 +155,9 @@ class ContentPollServiceTest {
         ContentPollResponse.Detail detail = service.get(MEETING_ID, HOST_ID);
 
         // then
-        ContentPollResponse.CandidateRank rank = detail.candidates().get(0);
-        assertEquals(0, rank.totalScore());
-        assertEquals(ContentPreference.PREFER, rank.myPreference());
+        ContentPollResponse.CandidateRank rank = detail.getCandidates().get(0);
+        assertEquals(0, rank.getTotalScore());
+        assertEquals(ContentPreference.PREFER, rank.getMyPreference());
     }
 
     @Test
@@ -179,8 +179,8 @@ class ContentPollServiceTest {
 
         // then
         assertEquals(List.of(41L, 40L),
-                detail.candidates().stream().map(ContentPollResponse.CandidateRank::candidateId).toList());
-        assertEquals(3, detail.candidates().get(0).totalScore());
+                detail.getCandidates().stream().map(ContentPollResponse.CandidateRank::getCandidateId).toList());
+        assertEquals(3, detail.getCandidates().get(0).getTotalScore());
     }
 
     @Test
@@ -195,7 +195,7 @@ class ContentPollServiceTest {
                 new ContentPollRequest.UpdateDeadline(newDeadline));
 
         // then
-        assertEquals(newDeadline, updated.deadline());
+        assertEquals(newDeadline, updated.getDeadline());
         InOrder order = inOrder(meetingRepository, contentPollRepository);
         order.verify(meetingRepository).findByIdAndDeletedAtIsNullForShare(MEETING_ID);
         order.verify(contentPollRepository).findByMeetingIdForUpdate(MEETING_ID);
@@ -244,20 +244,20 @@ class ContentPollServiceTest {
                 service.getResults(MEETING_ID, HOST_ID, ContentPollResultSort.SCORE);
 
         // then
-        assertEquals(2, results.joinedCount());
-        ContentPollResultsResponse.CandidateResult firstResult = results.candidates().get(0);
-        assertEquals(40L, firstResult.candidateId());
-        assertEquals(4, firstResult.totalScore());
-        assertEquals(1, firstResult.preferCount());
-        assertEquals(1, firstResult.dislikeCount());
-        assertEquals(0, firstResult.noResponseCount());
-        assertEquals("host", firstResult.createdByNickname());
-        assertEquals(1, results.candidates().get(1).noResponseCount());
+        assertEquals(2, results.getJoinedCount());
+        ContentPollResultsResponse.CandidateResult firstResult = results.getCandidates().get(0);
+        assertEquals(40L, firstResult.getCandidateId());
+        assertEquals(4, firstResult.getTotalScore());
+        assertEquals(1, firstResult.getPreferCount());
+        assertEquals(1, firstResult.getDislikeCount());
+        assertEquals(0, firstResult.getNoResponseCount());
+        assertEquals("host", firstResult.getCreatedByNickname());
+        assertEquals(1, results.getCandidates().get(1).getNoResponseCount());
 
-        ContentPollResultsResponse.MemberResult memberResult = results.members().get(1);
-        assertEquals(Arrays.asList(ContentPreference.DISLIKE, null), memberResult.preferences());
-        assertEquals(1, memberResult.responseCount());
-        assertEquals(true, results.members().get(0).host());
+        ContentPollResultsResponse.MemberResult memberResult = results.getMembers().get(1);
+        assertEquals(Arrays.asList(ContentPreference.DISLIKE, null), memberResult.getPreferences());
+        assertEquals(1, memberResult.getResponseCount());
+        assertEquals(true, results.getMembers().get(0).getHost());
     }
 
     @Test
@@ -280,12 +280,12 @@ class ContentPollServiceTest {
                 service.getResults(MEETING_ID, HOST_ID, ContentPollResultSort.SCORE);
 
         // then
-        ContentPollResultsResponse.CandidateResult result = results.candidates().get(0);
-        assertEquals(2, results.joinedCount());
-        assertEquals(2, result.responseCount());
-        assertEquals(0, result.noResponseCount());
-        assertEquals("member", result.createdByNickname());
-        assertEquals(2, results.members().size());
+        ContentPollResultsResponse.CandidateResult result = results.getCandidates().get(0);
+        assertEquals(2, results.getJoinedCount());
+        assertEquals(2, result.getResponseCount());
+        assertEquals(0, result.getNoResponseCount());
+        assertEquals("member", result.getCreatedByNickname());
+        assertEquals(2, results.getMembers().size());
     }
 
     @Test
@@ -302,7 +302,7 @@ class ContentPollServiceTest {
                 new ContentPollRequest.Confirm(40L));
 
         // then
-        assertEquals(40L, confirmed.confirmedCandidateId());
+        assertEquals(40L, confirmed.getConfirmedCandidateId());
         InOrder order = inOrder(meetingRepository, contentPollRepository);
         order.verify(meetingRepository).findByIdAndDeletedAtIsNullForShare(MEETING_ID);
         order.verify(contentPollRepository).findByMeetingIdForUpdate(MEETING_ID);

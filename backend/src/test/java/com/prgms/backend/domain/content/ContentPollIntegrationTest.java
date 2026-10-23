@@ -237,17 +237,17 @@ class ContentPollIntegrationTest {
         ContentPollResultsResponse.Detail results =
                 pollService.getResults(meetingId, host.getId(), ContentPollResultSort.SCORE);
 
-        assertEquals(3, results.joinedCount());
-        assertEquals(3, results.members().size());
-        for (ContentPollResultsResponse.CandidateResult candidate : results.candidates()) {
-            assertEquals(3, candidate.responseCount());
-            assertEquals(0, candidate.noResponseCount());
+        assertEquals(3, results.getJoinedCount());
+        assertEquals(3, results.getMembers().size());
+        for (ContentPollResultsResponse.CandidateResult candidate : results.getCandidates()) {
+            assertEquals(3, candidate.getResponseCount());
+            assertEquals(0, candidate.getNoResponseCount());
         }
-        assertTrue(results.members().stream().anyMatch(m -> m.meetingMemberId().equals(bobMember.getId())));
+        assertTrue(results.getMembers().stream().anyMatch(m -> m.getMeetingMemberId() == bobMember.getId()));
         // 후보 등록자가 탈퇴해도 닉네임은 유지
-        ContentPollResultsResponse.CandidateResult byBob = results.candidates().stream()
-                .filter(c -> c.candidateId().equals(b.getId())).findFirst().orElseThrow();
-        assertTrue(byBob.createdByNickname().startsWith("bob"));
+        ContentPollResultsResponse.CandidateResult byBob = results.getCandidates().stream()
+                .filter(c -> c.getCandidateId() == b.getId()).findFirst().orElseThrow();
+        assertTrue(byBob.getCreatedByNickname().startsWith("bob"));
     }
 
     @Test
@@ -264,11 +264,11 @@ class ContentPollIntegrationTest {
                 pollService.getResults(meetingId, host.getId(), ContentPollResultSort.SCORE);
 
         // 호스트(미응답) + 표를 낸 탈퇴자 = 2명, 표 없이 나간 alice는 제외
-        assertEquals(2, results.joinedCount());
-        ContentPollResultsResponse.CandidateResult result = results.candidates().get(0);
-        assertEquals(1, result.responseCount());
-        assertEquals(1, result.noResponseCount());
-        assertTrue(results.members().stream().noneMatch(m -> m.meetingMemberId().equals(aliceMember.getId())));
+        assertEquals(2, results.getJoinedCount());
+        ContentPollResultsResponse.CandidateResult result = results.getCandidates().get(0);
+        assertEquals(1, result.getResponseCount());
+        assertEquals(1, result.getNoResponseCount());
+        assertTrue(results.getMembers().stream().noneMatch(m -> m.getMeetingMemberId() == aliceMember.getId()));
     }
 
     // ---------- helpers ----------

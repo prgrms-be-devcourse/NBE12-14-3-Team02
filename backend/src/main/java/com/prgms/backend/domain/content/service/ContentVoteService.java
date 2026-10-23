@@ -38,16 +38,16 @@ public class ContentVoteService {
         Long meetingMemberId = member.getId();
 
         ContentPoll poll = getOpenPoll(meetingId);
-        ContentCandidate candidate = getCandidateInPoll(request.candidateId(), poll);
+        ContentCandidate candidate = getCandidateInPoll(request.getCandidateId(), poll);
 
         //투표가 있으면 변경, 없으면 추가
         ContentVote vote = contentVoteRepository
                 .findByContentCandidateIdAndMeetingMemberId(candidate.getId(), meetingMemberId);
         if (vote != null) {
-            vote.changePreference(request.preference());
+            vote.changePreference(request.getPreference());
         } else {
             vote = contentVoteRepository.save(
-                    new ContentVote(candidate, meetingMemberId, request.preference())
+                    new ContentVote(candidate, meetingMemberId, request.getPreference())
             );
         }
 

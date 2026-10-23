@@ -95,9 +95,9 @@ class ContentVoteServiceTest {
                 new ContentVoteRequest.Submit(CANDIDATE_ID, ContentPreference.PREFER));
 
         // then
-        assertEquals(CANDIDATE_ID, saved.candidateId());
-        assertEquals(MEMBER_ID, saved.meetingMemberId());
-        assertEquals(ContentPreference.PREFER, saved.preference());
+        assertEquals(CANDIDATE_ID, saved.getCandidateId());
+        assertEquals(MEMBER_ID, saved.getMeetingMemberId());
+        assertEquals(ContentPreference.PREFER, saved.getPreference());
         verify(contentVoteRepository).save(any(ContentVote.class));
     }
 
@@ -115,7 +115,7 @@ class ContentVoteServiceTest {
                 new ContentVoteRequest.Submit(CANDIDATE_ID, ContentPreference.DISLIKE));
 
         // then
-        assertEquals(ContentPreference.DISLIKE, saved.preference());
+        assertEquals(ContentPreference.DISLIKE, saved.getPreference());
         assertEquals(ContentPreference.DISLIKE, existing.getPreference());
         verify(contentVoteRepository, never()).save(any());
     }

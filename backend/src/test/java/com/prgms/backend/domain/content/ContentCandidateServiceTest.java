@@ -97,9 +97,9 @@ class ContentCandidateServiceTest {
                 new ContentCandidateRequest.Create("새 후보", "설명"));
 
         // then
-        assertEquals("새 후보", saved.title());
-        assertEquals(MEMBER_ID, saved.createdByMemberId());
-        assertEquals(POLL_ID, saved.contentPollId());
+        assertEquals("새 후보", saved.getTitle());
+        assertEquals(MEMBER_ID, saved.getCreatedByMemberId());
+        assertEquals(POLL_ID, saved.getContentPollId());
     }
 
     @Test
@@ -148,7 +148,7 @@ class ContentCandidateServiceTest {
                 new ContentCandidateRequest.Update("수정된 후보", "수정된 설명"));
 
         // then
-        assertEquals("수정된 후보", saved.title());
+        assertEquals("수정된 후보", saved.getTitle());
         assertEquals("수정된 설명", candidate.getDescription());
     }
 

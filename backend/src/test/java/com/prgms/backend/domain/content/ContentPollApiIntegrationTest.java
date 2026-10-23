@@ -186,7 +186,10 @@ class ContentPollApiIntegrationTest {
 
         mvc.perform(auth(put(path), alice).contentType(MediaType.APPLICATION_JSON)
                         .content(voteJson(candidate.getId(), "PREFER")))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.createdAt").exists())
+                .andExpect(jsonPath("$.data.updatedAt").exists())
+                .andExpect(jsonPath("$.data.updateAd").doesNotExist());
         mvc.perform(auth(put(path), alice).contentType(MediaType.APPLICATION_JSON)
                         .content(voteJson(candidate.getId(), "DISLIKE")))
                 .andExpect(status().isOk());
