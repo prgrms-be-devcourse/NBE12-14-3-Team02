@@ -6,7 +6,6 @@ import com.prgms.backend.domain.user.repository.UserRepository;
 import com.prgms.backend.support.MySqlContainerSupport;
 import jakarta.persistence.EntityManager;
 import java.time.LocalDateTime;
-import java.util.Optional;
 import org.hibernate.Hibernate;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -119,12 +118,12 @@ class UserRepositoryTest extends MySqlContainerSupport {
         flushAndClear();
 
         // when
-        Optional<User> found = userRepository.findByEmail("user@test.com");
-        Optional<User> notFound = userRepository.findByEmail("none@test.com");
+        User found = userRepository.findByEmail("user@test.com");
+        User notFound = userRepository.findByEmail("none@test.com");
 
         // then
-        assertEquals(user.getId(), found.orElseThrow().getId());
-        assertTrue(notFound.isEmpty());
+        assertEquals(user.getId(), found.getId());
+        assertNull(notFound);
     }
 
     @Test
