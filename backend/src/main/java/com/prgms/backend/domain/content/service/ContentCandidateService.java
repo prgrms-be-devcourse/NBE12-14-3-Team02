@@ -61,7 +61,7 @@ public class ContentCandidateService {
         ContentCandidate candidate = getCandidateInPoll(candidateId, poll);
 
         // 접근 meetingMemberId가 후보생성 멤버가 아니면 예외
-        if(!candidate.getCreatedByMemberId().equals(meetingMemberId)){
+        if(candidate.getCreatedByMemberId() != meetingMemberId){
             throw new NotContentCandidateOwnerException();
         }
         // 후보가 투표가 되어있으면 예외
@@ -88,7 +88,7 @@ public class ContentCandidateService {
         ContentCandidate candidate = getCandidateInPoll(candidateId, poll);
 
         //멤버 ID가 후보만든 멤버가 아니면 예외
-        if(!candidate.getCreatedByMemberId().equals(meetingMemberId)){
+        if(candidate.getCreatedByMemberId() != meetingMemberId){
             throw new NotContentCandidateOwnerException();
         }
         //후보가 투표되어있으면 예외
@@ -112,7 +112,7 @@ public class ContentCandidateService {
     private ContentCandidate getCandidateInPoll(Long candidateId,ContentPoll poll){
         ContentCandidate candidate = contentCandidateRepository.findById(candidateId)
                 .orElseThrow(() -> new ContentCandidateNotFoundException(candidateId));
-        if(!candidate.getContentPoll().getId().equals(poll.getId())){
+        if(candidate.getContentPoll().getId() != poll.getId()){
             throw new ContentCandidateNotFoundException(candidateId);
         }
         return candidate;

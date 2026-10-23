@@ -83,7 +83,7 @@ public class ContentPollService {
                             ? votes.stream().mapToInt(v -> v.getPreference().score()).sum()
                             : 0;
                     ContentPreference myPreference = votes.stream()
-                            .filter(v -> v.getMeetingMemberId().equals(meetingMemberId))
+                            .filter(v -> v.getMeetingMemberId() == meetingMemberId)
                             .map(ContentVote::getPreference)
                             .findFirst()
                             .orElse(null);
@@ -326,7 +326,7 @@ public class ContentPollService {
 
         ContentCandidate candidate = contentCandidateRepository.findById(request.candidateId())
                 .orElseThrow(() -> new ContentCandidateNotFoundException(request.candidateId()));
-        if (!candidate.getContentPoll().getId().equals(poll.getId())) {
+        if (candidate.getContentPoll().getId() != poll.getId()) {
             throw new ContentCandidateNotFoundException(request.candidateId());
         }
 
