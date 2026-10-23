@@ -122,6 +122,68 @@ class MeetingIntegrationTest {
         flushAndClear();
     }
 
+    @Test
+    @DisplayName("모임원은 ID 0으로 신규 저장하고 재조회 후 지연 로딩과 탈퇴·재가입을 유지한다")
+    void memberEntity_persistReloadAndRejoin() {
+        MeetingMember newMember = new MeetingMember(meeting, member);
+        assertEquals(0L, newMember.getId());
+        members.saveAndFlush(newMember);
+        long memberId = newMember.getId();
+        assertTrue(memberId > 0L);
+        flushAndClear();
+
+        MeetingMember loaded = members.findById(memberId).orElseThrow();
+        var persistenceUnit = entityManager.getEntityManagerFactory().getPersistenceUnitUtil();
+        assertFalse(persistenceUnit.isLoaded(loaded, "meeting"));
+        assertFalse(persistenceUnit.isLoaded(loaded, "user"));
+        assertEquals("제주도 여행", loaded.getMeeting().getName());
+        assertEquals("회원", loaded.getUser().getNickname());
+        assertTrue(loaded.isJoined());
+        assertNotNull(loaded.getJoinedAt());
+        assertNull(loaded.getLeftAt());
+
+        loaded.leave();
+        flushAndClear();
+        MeetingMember left = members.findById(memberId).orElseThrow();
+        assertFalse(left.isJoined());
+        assertNotNull(left.getLeftAt());
+
+        left.rejoin();
+        flushAndClear();
+        MeetingMember rejoined = members.findById(memberId).orElseThrow();
+        assertEquals(memberId, rejoined.getId());
+        assertTrue(rejoined.isJoined());
+        assertNotNull(rejoined.getJoinedAt());
+        assertNull(rejoined.getLeftAt());
+    }
+
+    @Test
+    @DisplayName("초대는 ID 0으로 신규 저장하고 재조회 후 감사 필드·지연 로딩·만료 판단을 유지한다")
+    void invitationEntity_persistReloadAndAudit() {
+        LocalDateTime expiresAt = LocalDateTime.now().plusDays(1).withNano(0);
+        MeetingInvitation invitation = new MeetingInvitation(meeting, "entity-reload-code", expiresAt);
+        assertEquals(0L, invitation.getId());
+        invitations.saveAndFlush(invitation);
+        long invitationId = invitation.getId();
+        assertTrue(invitationId > 0L);
+        assertNotNull(invitation.getCreatedAt());
+        flushAndClear();
+
+        MeetingInvitation loaded = invitations.findById(invitationId).orElseThrow();
+        assertFalse(entityManager.getEntityManagerFactory().getPersistenceUnitUtil().isLoaded(loaded, "meeting"));
+        assertEquals("제주도 여행", loaded.getMeeting().getName());
+        assertEquals("entity-reload-code", loaded.getInviteCode());
+        assertEquals(expiresAt, loaded.getExpiresAt());
+        assertNotNull(loaded.getCreatedAt());
+        assertFalse(loaded.isExpired());
+
+        MeetingInvitation expired = invitations.saveAndFlush(
+            new MeetingInvitation(meeting, "expired-entity-code", LocalDateTime.now().minusDays(1)));
+        long expiredId = expired.getId();
+        flushAndClear();
+        assertTrue(invitations.findById(expiredId).orElseThrow().isExpired());
+    }
+
     // 모임 API: 생성, 조회, 수정, 종료
 
     @Test
@@ -456,7 +518,7 @@ class MeetingIntegrationTest {
         JsonNode response = join(member, code);
         flushAndClear();
         MeetingMember saved = memberRecord(member);
-        assertEquals(saved.getId().longValue(), response.path("id").asLong());
+        assertEquals(saved.getId(), response.path("id").asLong());
         assertEquals(meeting.getId().longValue(), response.path("meetingId").asLong());
         assertEquals(member.getId(), response.path("userId").asLong());
         assertEquals("JOINED", response.path("status").asString());
