@@ -81,7 +81,7 @@ public class UserController {
     public ResponseEntity<ApiResponse<SignUpResponse>> signUp (
             @Valid @RequestBody SignUpRequest signUpRequest
     ) {
-        Long userId = authService.signup(signUpRequest.email(), signUpRequest.nickname(), signUpRequest.password(), signUpRequest.confirmPassword());
+        Long userId = authService.signup(signUpRequest.getEmail(), signUpRequest.getNickname(), signUpRequest.getPassword(), signUpRequest.getConfirmPassword());
         SignUpResponse response = new SignUpResponse(userId);
 
         return ResponseEntity
@@ -117,7 +117,7 @@ public class UserController {
             @RequestBody @Valid NicknameRequest request
     ) {
         Long userId = securityUser.getId();
-        ProfileResponse response = userService.updateNickname(userId, request.nickname());
+        ProfileResponse response = userService.updateNickname(userId, request.getNickname());
 
         return ResponseEntity
                 .status(HttpStatus.OK)
@@ -135,7 +135,7 @@ public class UserController {
             @AuthenticationPrincipal SecurityUser securityUser
     ){
         Long userId = securityUser.getId();
-        userService.updatePassword(userId, request.password(), request.newPassword());
+        userService.updatePassword(userId, request.getPassword(), request.getNewPassword());
 
         return ResponseEntity
                 .status(HttpStatus.OK)

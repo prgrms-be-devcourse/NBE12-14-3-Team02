@@ -168,8 +168,8 @@ class AuthServiceTest {
         TokenPair tokenPair = authService.login(new LogInRequest("user@test.com", "password"));
 
         // then
-        assertEquals("new-access-token", tokenPair.accessToken());
-        assertEquals("new-refresh-token", tokenPair.refreshToken());
+        assertEquals("new-access-token", tokenPair.getAccessToken());
+        assertEquals("new-refresh-token", tokenPair.getRefreshToken());
         assertEquals("new-refresh-token", user.getRefreshToken());
     }
 
@@ -219,8 +219,8 @@ class AuthServiceTest {
         TokenPair tokenPair = authService.reissue("refresh-token");
 
         // then
-        assertEquals("new-access-token", tokenPair.accessToken());
-        assertEquals("new-refresh-token", tokenPair.refreshToken());
+        assertEquals("new-access-token", tokenPair.getAccessToken());
+        assertEquals("new-refresh-token", tokenPair.getRefreshToken());
         assertEquals("new-refresh-token", user.getRefreshToken());
     }
 

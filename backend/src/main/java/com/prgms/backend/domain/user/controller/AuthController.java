@@ -39,7 +39,7 @@ public class AuthController {
     ) {
         TokenPair pair = authService.login(logInRequest);
 
-        ResponseCookie cookie = ResponseCookie.from("refreshToken", pair.refreshToken())
+        ResponseCookie cookie = ResponseCookie.from("refreshToken", pair.getRefreshToken())
                 .httpOnly(true)
                 .secure(true)
                 .sameSite("Strict")
@@ -47,7 +47,7 @@ public class AuthController {
                 .maxAge(Duration.ofDays(14))
                 .build();
 
-        LogInResponse response = new LogInResponse(pair.accessToken());
+        LogInResponse response = new LogInResponse(pair.getAccessToken());
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
@@ -67,7 +67,7 @@ public class AuthController {
     ) {
         TokenPair tokenPair = authService.reissue(refreshToken);
 
-        ResponseCookie cookie = ResponseCookie.from("refreshToken", tokenPair.refreshToken())
+        ResponseCookie cookie = ResponseCookie.from("refreshToken", tokenPair.getRefreshToken())
                 .httpOnly(true)
                 .secure(true)
                 .sameSite("Strict")
@@ -75,7 +75,7 @@ public class AuthController {
                 .maxAge(Duration.ofDays(14))
                 .build();
 
-        ReissueResponse response = new ReissueResponse(tokenPair.accessToken());
+        ReissueResponse response = new ReissueResponse(tokenPair.getAccessToken());
 
         return ResponseEntity
                 .status(HttpStatus.OK)
