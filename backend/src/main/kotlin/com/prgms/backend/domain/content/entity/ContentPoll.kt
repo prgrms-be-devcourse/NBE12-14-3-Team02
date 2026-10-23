@@ -1,6 +1,6 @@
 package com.prgms.backend.domain.content.entity
 
-import com.prgms.backend.domain.content.ENUM.ContentPollStatus
+import com.prgms.backend.domain.content.enums.ContentPollStatus
 import com.prgms.backend.global.entity.BaseTimeEntity
 import jakarta.persistence.Column
 import jakarta.persistence.Entity

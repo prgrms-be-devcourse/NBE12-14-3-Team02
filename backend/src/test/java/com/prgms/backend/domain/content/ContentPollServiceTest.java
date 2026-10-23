@@ -1,8 +1,8 @@
 package com.prgms.backend.domain.content;
 
-import com.prgms.backend.domain.content.ENUM.ContentPollResultSort;
-import com.prgms.backend.domain.content.ENUM.ContentPollStatus;
-import com.prgms.backend.domain.content.ENUM.ContentPreference;
+import com.prgms.backend.domain.content.enums.ContentPollResultSort;
+import com.prgms.backend.domain.content.enums.ContentPollStatus;
+import com.prgms.backend.domain.content.enums.ContentPreference;
 import com.prgms.backend.domain.content.dto.request.ContentPollRequest;
 import com.prgms.backend.domain.content.dto.response.ContentPollResponse;
 import com.prgms.backend.domain.content.dto.response.ContentPollResultsResponse;
@@ -38,6 +38,7 @@ import static com.prgms.backend.domain.schedule.support.ScheduleTestFixtures.use
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.*;
 
 class ContentPollServiceTest {
@@ -77,8 +78,8 @@ class ContentPollServiceTest {
 
         when(meetingRepository.findById(MEETING_ID)).thenReturn(Optional.of(meeting));
         when(meetingRepository.findByIdAndDeletedAtIsNullForShare(MEETING_ID)).thenReturn(meeting);
-        when(contentPollRepository.findByMeetingId(MEETING_ID)).thenReturn(Optional.of(poll));
-        when(contentPollRepository.findByMeetingIdForUpdate(MEETING_ID)).thenReturn(Optional.of(poll));
+        when(contentPollRepository.findByMeetingId(MEETING_ID)).thenReturn(poll);
+        when(contentPollRepository.findByMeetingIdForUpdate(MEETING_ID)).thenReturn(poll);
         when(meetingMemberRepository.findByMeetingIdAndUserId(MEETING_ID, HOST_ID)).thenReturn(hostMember);
         when(meetingMemberRepository.findByMeetingIdAndUserId(MEETING_ID, 2L)).thenReturn(member);
         when(meetingMemberRepository.findAllByMeetingId(MEETING_ID))
@@ -207,7 +208,7 @@ class ContentPollServiceTest {
         // when / then
         assertThrows(MeetingAccessDeniedException.class, () -> service.updateDeadline(MEETING_ID, 2L,
                 new ContentPollRequest.UpdateDeadline(LocalDateTime.now().plusDays(5))));
-        verify(contentPollRepository, never()).findByMeetingIdForUpdate(any());
+        verify(contentPollRepository, never()).findByMeetingIdForUpdate(anyLong());
     }
 
     @Test

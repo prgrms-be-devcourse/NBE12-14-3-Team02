@@ -1,6 +1,6 @@
 package com.prgms.backend.domain.content;
 
-import com.prgms.backend.domain.content.ENUM.ContentPreference;
+import com.prgms.backend.domain.content.enums.ContentPreference;
 import com.prgms.backend.domain.content.dto.request.ContentVoteRequest;
 import com.prgms.backend.domain.content.dto.response.ContentVoteResponse;
 import com.prgms.backend.domain.content.entity.ContentCandidate;
@@ -66,10 +66,10 @@ class ContentVoteServiceTest {
         candidate = candidate(CANDIDATE_ID, poll);
 
         when(meetingMemberRepository.findByMeetingIdAndUserId(MEETING_ID, USER_ID)).thenReturn(member);
-        when(contentPollRepository.findByMeetingId(MEETING_ID)).thenReturn(Optional.of(poll));
+        when(contentPollRepository.findByMeetingId(MEETING_ID)).thenReturn(poll);
         when(contentCandidateRepository.findById(CANDIDATE_ID)).thenReturn(Optional.of(candidate));
         when(contentVoteRepository.findByContentCandidateIdAndMeetingMemberId(CANDIDATE_ID, MEMBER_ID))
-                .thenReturn(Optional.empty());
+                .thenReturn(null);
         when(contentVoteRepository.save(any(ContentVote.class)))
                 .thenAnswer(invocation -> filled(invocation.getArgument(0)));
     }
@@ -108,7 +108,7 @@ class ContentVoteServiceTest {
         // given
         ContentVote existing = filled(new ContentVote(candidate, MEMBER_ID, ContentPreference.PREFER));
         when(contentVoteRepository.findByContentCandidateIdAndMeetingMemberId(CANDIDATE_ID, MEMBER_ID))
-                .thenReturn(Optional.of(existing));
+                .thenReturn(existing);
 
         // when
         ContentVoteResponse.Saved saved = service.upsert(MEETING_ID, USER_ID,

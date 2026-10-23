@@ -1,6 +1,6 @@
 package com.prgms.backend.domain.content.controller;
 
-import com.prgms.backend.domain.content.ENUM.ContentPollResultSort;
+import com.prgms.backend.domain.content.enums.ContentPollResultSort;
 import com.prgms.backend.domain.content.dto.request.ContentPollRequest;
 import com.prgms.backend.domain.content.dto.response.ContentPollResponse;
 import com.prgms.backend.domain.content.dto.response.ContentPollResultsResponse;

@@ -1,6 +1,6 @@
 package com.prgms.backend.domain.content;
 
-import com.prgms.backend.domain.content.ENUM.ContentPollStatus;
+import com.prgms.backend.domain.content.enums.ContentPollStatus;
 import com.prgms.backend.domain.content.dto.request.ContentPollRequest;
 import com.prgms.backend.domain.content.entity.ContentCandidate;
 import com.prgms.backend.domain.content.entity.ContentPoll;
@@ -166,7 +166,7 @@ class ContentPollCloseConcurrencyIntegrationTest {
         ExecutorService executor = Executors.newFixedThreadPool(2);
         try {
             Future<?> update = holdTransaction(executor, () -> {
-                ContentPoll poll = contentPollRepository.findByIdForUpdate(pollId).orElseThrow();
+                ContentPoll poll = contentPollRepository.findByIdForUpdate(pollId);
                 poll.changeDeadLine(LocalDateTime.now().plusDays(1));
             }, deadlineChanged, releaseUpdate);
             await(deadlineChanged);

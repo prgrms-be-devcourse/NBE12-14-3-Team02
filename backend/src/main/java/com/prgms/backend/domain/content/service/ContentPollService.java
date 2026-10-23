@@ -1,8 +1,8 @@
 package com.prgms.backend.domain.content.service;
 
-import com.prgms.backend.domain.content.ENUM.ContentPollResultSort;
-import com.prgms.backend.domain.content.ENUM.ContentPollStatus;
-import com.prgms.backend.domain.content.ENUM.ContentPreference;
+import com.prgms.backend.domain.content.enums.ContentPollResultSort;
+import com.prgms.backend.domain.content.enums.ContentPollStatus;
+import com.prgms.backend.domain.content.enums.ContentPreference;
 import com.prgms.backend.domain.content.dto.request.ContentPollRequest;
 import com.prgms.backend.domain.content.dto.response.ContentPollResponse;
 import com.prgms.backend.domain.content.dto.response.ContentPollResultsResponse;
@@ -63,8 +63,10 @@ public class ContentPollService {
         MeetingMember member = requireJoinedMember(meetingId, userId);
         Long meetingMemberId = member.getId();
 
-        ContentPoll poll = contentPollRepository.findByMeetingId(meetingId)
-                .orElseThrow(() -> new ContentPollNotFoundException(meetingId));
+        ContentPoll poll = contentPollRepository.findByMeetingId(meetingId);
+        if (poll == null) {
+            throw new ContentPollNotFoundException(meetingId);
+        }
         //해당 poll의 후보들을 등록시간 기준으로 정렬
         List<ContentCandidate> candidates = contentCandidateRepository.findByContentPollIdOrderByCreatedAtAsc(poll.getId());
 
@@ -129,8 +131,10 @@ public class ContentPollService {
             throw new MeetingAccessDeniedException(meetingId, userId);
         }
 
-        ContentPoll poll = contentPollRepository.findByMeetingIdForUpdate(meetingId)
-                .orElseThrow(() -> new ContentPollNotFoundException(meetingId));
+        ContentPoll poll = contentPollRepository.findByMeetingIdForUpdate(meetingId);
+        if (poll == null) {
+            throw new ContentPollNotFoundException(meetingId);
+        }
         if(poll.getStatus() == ContentPollStatus.CLOSED){
             throw new ContentPollClosedException();
         }
@@ -160,8 +164,10 @@ public class ContentPollService {
         requireJoinedMember(meetingId, userId);
         Meeting meeting = meetingRepository.findById(meetingId)
                 .orElseThrow(() -> new MeetingNotFoundException(meetingId));
-        ContentPoll poll = contentPollRepository.findByMeetingId(meetingId)
-                .orElseThrow(() -> new ContentPollNotFoundException(meetingId));
+        ContentPoll poll = contentPollRepository.findByMeetingId(meetingId);
+        if (poll == null) {
+            throw new ContentPollNotFoundException(meetingId);
+        }
         if (poll.getStatus() != ContentPollStatus.CLOSED) {
             throw new ContentPollNotClosedException("투표가 진행 중일 때는 결과를 볼 수 없습니다.");
         }
@@ -315,8 +321,10 @@ public class ContentPollService {
             throw new MeetingAccessDeniedException(meetingId, userId);
         }
 
-        ContentPoll poll = contentPollRepository.findByMeetingIdForUpdate(meetingId)
-                .orElseThrow(() -> new ContentPollNotFoundException(meetingId));
+        ContentPoll poll = contentPollRepository.findByMeetingIdForUpdate(meetingId);
+        if (poll == null) {
+            throw new ContentPollNotFoundException(meetingId);
+        }
         if(poll.getStatus() != ContentPollStatus.CLOSED) {
             throw new ContentPollNotClosedException();
         }

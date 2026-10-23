@@ -1,7 +1,7 @@
 package com.prgms.backend.domain.content.dto.response;
 
-import com.prgms.backend.domain.content.ENUM.ContentPollStatus;
-import com.prgms.backend.domain.content.ENUM.ContentPreference;
+import com.prgms.backend.domain.content.enums.ContentPollStatus;
+import com.prgms.backend.domain.content.enums.ContentPreference;
 import com.prgms.backend.domain.content.entity.ContentPoll;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
