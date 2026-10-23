@@ -12,11 +12,8 @@ import com.prgms.backend.domain.meeting.entity.Meeting;
 import com.prgms.backend.domain.meeting.entity.MeetingMember;
 import com.prgms.backend.domain.meeting.repository.MeetingMemberRepository;
 import com.prgms.backend.global.exception.custom.content.ContentCandidateHasVotesException;
-import com.prgms.backend.global.exception.custom.content.ContentCandidateNotFoundException;
 import com.prgms.backend.global.exception.custom.content.ContentPollClosedException;
-import com.prgms.backend.global.exception.custom.content.ContentPollNotFoundException;
 import com.prgms.backend.global.exception.custom.content.DuplicateContentCandidateTitleException;
-import com.prgms.backend.global.exception.custom.content.NotContentCandidateOwnerException;
 import com.prgms.backend.global.exception.custom.meeting.MeetingAccessDeniedException;
 import com.prgms.backend.global.exception.custom.meeting.MeetingMemberNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
@@ -69,7 +66,7 @@ class ContentCandidateServiceTest {
         poll = poll(POLL_ID);
         candidate = candidate(CANDIDATE_ID, poll, MEMBER_ID, "기존 후보");
 
-        when(meetingMemberRepository.findByMeetingIdAndUserId(MEETING_ID, USER_ID)).thenReturn(Optional.of(member));
+        when(meetingMemberRepository.findByMeetingIdAndUserId(MEETING_ID, USER_ID)).thenReturn(member);
         when(contentPollRepository.findByMeetingId(MEETING_ID)).thenReturn(Optional.of(poll));
         when(contentCandidateRepository.findById(CANDIDATE_ID)).thenReturn(Optional.of(candidate));
         when(contentCandidateRepository.save(any(ContentCandidate.class)))
@@ -110,7 +107,7 @@ class ContentCandidateServiceTest {
     void createByNonMember() {
 
         // given
-        when(meetingMemberRepository.findByMeetingIdAndUserId(MEETING_ID, USER_ID)).thenReturn(Optional.empty());
+        when(meetingMemberRepository.findByMeetingIdAndUserId(MEETING_ID, USER_ID)).thenReturn(null);
 
         // when / then
         assertThrows(MeetingMemberNotFoundException.class, () -> service.create(MEETING_ID, USER_ID,

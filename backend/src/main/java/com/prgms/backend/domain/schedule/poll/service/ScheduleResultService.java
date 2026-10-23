@@ -225,9 +225,9 @@ public class ScheduleResultService {
 
     private ResultContext getResultContext(Long meetingId, Long userId) {
         //먼저 모임을 조회
-        meetingRepository
-            .findByIdAndDeletedAtIsNull(meetingId)
-            .orElseThrow(() -> new MeetingNotFoundException(meetingId));
+        if (meetingRepository.findByIdAndDeletedAtIsNull(meetingId) == null) {
+            throw new MeetingNotFoundException(meetingId);
+        }
         //해당 유저가 참여자인지
         validateJoinedMember(meetingId, userId);
         //마감된 투표인가
@@ -258,11 +258,10 @@ public class ScheduleResultService {
     }
 
     private void validateJoinedMember(Long meetingId, Long userId) {
-        MeetingMember meetingMember =
-                meetingMemberRepository.findByMeetingIdAndUserId(meetingId, userId)
-                        .orElseThrow(
-                                () -> new MeetingMemberNotFoundException(meetingId, userId)
-                        );
+        MeetingMember meetingMember = meetingMemberRepository.findByMeetingIdAndUserId(meetingId, userId);
+        if (meetingMember == null) {
+            throw new MeetingMemberNotFoundException(meetingId, userId);
+        }
 
         if (!meetingMember.isJoined()) {
             throw new MeetingMemberAlreadyLeftException(meetingId, userId);

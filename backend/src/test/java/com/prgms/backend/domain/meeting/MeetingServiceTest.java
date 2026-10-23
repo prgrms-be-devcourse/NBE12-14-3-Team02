@@ -174,7 +174,7 @@ class MeetingServiceTest {
         when(
             meetingRepository
                 .findByIdAndDeletedAtIsNull(10L)
-        ).thenReturn(Optional.of(meeting));
+        ).thenReturn(meeting);
 
         when(
             meetingMemberRepository
@@ -405,7 +405,7 @@ class MeetingServiceTest {
         when(
             meetingRepository
                 .findByIdAndDeletedAtIsNullForUpdate(10L)
-        ).thenReturn(Optional.of(meeting));
+        ).thenReturn(meeting);
 
         when(
             meetingMemberRepository
@@ -449,7 +449,7 @@ class MeetingServiceTest {
         when(
             meetingRepository
                 .findByIdAndDeletedAtIsNullForUpdate(10L)
-        ).thenReturn(Optional.empty());
+        ).thenReturn(null);
 
         // when & then
         assertThrows(
@@ -483,7 +483,7 @@ class MeetingServiceTest {
         when(
             meetingRepository
                 .findByIdAndDeletedAtIsNullForUpdate(10L)
-        ).thenReturn(Optional.of(meeting));
+        ).thenReturn(meeting);
 
         when(
             expenseRepository
@@ -532,7 +532,7 @@ class MeetingServiceTest {
         when(
             meetingRepository
                 .findByIdAndDeletedAtIsNullForUpdate(10L)
-        ).thenReturn(Optional.of(meeting));
+        ).thenReturn(meeting);
 
         when(
             expenseRepository
@@ -589,7 +589,7 @@ class MeetingServiceTest {
         when(
             meetingRepository
                 .findByIdAndDeletedAtIsNullForUpdate(10L)
-        ).thenReturn(Optional.of(meeting));
+        ).thenReturn(meeting);
 
         when(
             expenseRepository
@@ -627,7 +627,7 @@ class MeetingServiceTest {
         when(
             meetingRepository
                 .findByIdAndDeletedAtIsNullForUpdate(10L)
-        ).thenReturn(Optional.empty());
+        ).thenReturn(null);
 
         // when & then
         assertThrows(
@@ -658,7 +658,7 @@ class MeetingServiceTest {
         when(
             meetingRepository
                 .findByIdAndDeletedAtIsNullForUpdate(10L)
-        ).thenReturn(Optional.of(meeting));
+        ).thenReturn(meeting);
 
         when(
             schedulePollRepository
@@ -701,7 +701,7 @@ class MeetingServiceTest {
         when(
             meetingRepository
                 .findByIdAndDeletedAtIsNullForUpdate(10L)
-        ).thenReturn(Optional.of(meeting));
+        ).thenReturn(meeting);
 
         when(
             contentPollRepository

@@ -82,8 +82,11 @@ public class ScheduleVoteService {
     }
 
     private Meeting getMeetingWithSharedLock(Long meetingId){
-        return meetingRepository.findByIdAndDeletedAtIsNullForShare(meetingId)
-                .orElseThrow(() -> new MeetingNotFoundException(meetingId));
+        Meeting meeting = meetingRepository.findByIdAndDeletedAtIsNullForShare(meetingId);
+        if (meeting == null) {
+            throw new MeetingNotFoundException(meetingId);
+        }
+        return meeting;
     }
 
     private SchedulePoll getPollWithSharedLock(Long meetingId){
@@ -100,11 +103,11 @@ public class ScheduleVoteService {
     }
 
     private MeetingMember getMeetingMemberWithExclusiveLock(Long meetingId, Long userId){
-        return meetingMemberRepository
-                        .findByMeetingIdAndUserIdForUpdate(meetingId, userId)
-                        .orElseThrow(
-                                () -> new MeetingMemberNotFoundException(meetingId, userId)
-                        );
+        MeetingMember meetingMember = meetingMemberRepository.findByMeetingIdAndUserIdForUpdate(meetingId, userId);
+        if (meetingMember == null) {
+            throw new MeetingMemberNotFoundException(meetingId, userId);
+        }
+        return meetingMember;
     }
 
     private void validateJoinedMember(MeetingMember meetingMember, Long meetingId, Long userId){

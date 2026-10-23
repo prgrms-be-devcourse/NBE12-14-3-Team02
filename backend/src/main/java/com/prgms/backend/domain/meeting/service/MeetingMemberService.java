@@ -59,9 +59,9 @@ public class MeetingMemberService {
     ){
 
         // 존재하지 않는 모임인지 검사
-        meetingRepository
-            .findByIdAndDeletedAtIsNull(meetingId)
-            .orElseThrow(() -> new MeetingNotFoundException(meetingId));
+        if (meetingRepository.findByIdAndDeletedAtIsNull(meetingId) == null) {
+            throw new MeetingNotFoundException(meetingId);
+        }
 
         // 현재 로그인한 사용자가 해당 모임에 참여 중인지 검사
         if(!isMeetingMember(meetingId, userId)){
@@ -96,9 +96,10 @@ public class MeetingMemberService {
         Long userId
     ) {
         // 존재하는지, 삭제되지 않은 모임인지 검사
-        Meeting meeting = meetingRepository
-            .findByIdAndDeletedAtIsNullForUpdate(meetingId)
-            .orElseThrow(() -> new MeetingNotFoundException(meetingId));
+        Meeting meeting = meetingRepository.findByIdAndDeletedAtIsNullForUpdate(meetingId);
+        if (meeting == null) {
+            throw new MeetingNotFoundException(meetingId);
+        }
 
         // 모임장은 모임 탈퇴 불가
         if (meeting.isHost(userId) && !meeting.isCompleted()) {
@@ -106,10 +107,10 @@ public class MeetingMemberService {
         }
 
         // 존재하는 모임원인지 검사
-        MeetingMember meetingMember =
-            meetingMemberRepository
-                .findByMeetingIdAndUserId(meetingId, userId)
-                .orElseThrow(() -> new MeetingMemberNotFoundException(meetingId, userId));
+        MeetingMember meetingMember = meetingMemberRepository.findByMeetingIdAndUserId(meetingId, userId);
+        if (meetingMember == null) {
+            throw new MeetingMemberNotFoundException(meetingId, userId);
+        }
 
         // 이미 탈퇴한 회원
         if (!meetingMember.isJoined()) {

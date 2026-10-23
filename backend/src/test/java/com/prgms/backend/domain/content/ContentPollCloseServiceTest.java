@@ -45,7 +45,7 @@ class ContentPollCloseServiceTest {
         poll = poll(LocalDateTime.now().minusMinutes(1));
 
         when(contentPollRepository.findMeetingIdByPollId(POLL_ID)).thenReturn(Optional.of(MEETING_ID));
-        when(meetingRepository.findByIdAndDeletedAtIsNullForShare(MEETING_ID)).thenReturn(Optional.of(meeting));
+        when(meetingRepository.findByIdAndDeletedAtIsNullForShare(MEETING_ID)).thenReturn(meeting);
         when(contentPollRepository.findByIdForUpdate(POLL_ID)).thenReturn(Optional.of(poll));
     }
 

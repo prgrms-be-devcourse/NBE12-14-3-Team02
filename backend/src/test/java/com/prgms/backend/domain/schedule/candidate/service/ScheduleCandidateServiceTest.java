@@ -42,7 +42,7 @@ class ScheduleCandidateServiceTest {
         Meeting meeting = meeting(10L, user(1L, "host"));
         poll = poll(20L, meeting, LocalDateTime.now().plusDays(3));
         firstDate = LocalDate.now().plusDays(1);
-        when(meetings.findByIdAndDeletedAtIsNullForShare(10L)).thenReturn(Optional.of(meeting));
+        when(meetings.findByIdAndDeletedAtIsNullForShare(10L)).thenReturn(meeting);
         when(polls.findByMeetingIdForUpdate(10L)).thenReturn(Optional.of(poll));
     }
 

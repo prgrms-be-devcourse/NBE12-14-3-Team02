@@ -101,10 +101,11 @@ public class ScheduleCandidateService {
     private Meeting getMeetingWithSharedLock(
             Long meetingId
     ) {
-        return meetingRepository.findByIdAndDeletedAtIsNullForShare(meetingId)
-                .orElseThrow(
-                        () -> new MeetingNotFoundException(meetingId)
-                );
+        Meeting meeting = meetingRepository.findByIdAndDeletedAtIsNullForShare(meetingId);
+        if (meeting == null) {
+            throw new MeetingNotFoundException(meetingId);
+        }
+        return meeting;
     }
 
     private SchedulePoll getOpenPollWithExclusiveLock(Long meetingId) {

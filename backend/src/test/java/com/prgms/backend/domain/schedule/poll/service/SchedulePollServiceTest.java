@@ -43,8 +43,8 @@ class SchedulePollServiceTest {
         meeting = meeting(10L, user(1L, "host"));
         deadline = LocalDateTime.now().plusDays(3);
         poll = poll(20L, meeting, deadline);
-        when(meetings.findByIdAndDeletedAtIsNullForUpdate(10L)).thenReturn(Optional.of(meeting));
-        when(meetings.findByIdAndDeletedAtIsNullForShare(10L)).thenReturn(Optional.of(meeting));
+        when(meetings.findByIdAndDeletedAtIsNullForUpdate(10L)).thenReturn(meeting);
+        when(meetings.findByIdAndDeletedAtIsNullForShare(10L)).thenReturn(meeting);
     }
 
     @Test
@@ -101,8 +101,8 @@ class SchedulePollServiceTest {
         MeetingMember member = member(30L, meeting, user(2L, "member"));
         LocalDate candidateDate = LocalDate.now().plusDays(1);
         candidate(40L, poll, candidateDate);
-        when(meetings.findByIdAndDeletedAtIsNull(10L)).thenReturn(Optional.of(meeting));
-        when(members.findByMeetingIdAndUserId(10L, 2L)).thenReturn(Optional.of(member));
+        when(meetings.findByIdAndDeletedAtIsNull(10L)).thenReturn(meeting);
+        when(members.findByMeetingIdAndUserId(10L, 2L)).thenReturn(member);
         when(polls.findByMeetingIdWithCandidates(10L)).thenReturn(Optional.of(poll));
 
         var response = service.getPoll(10L, 2L);
@@ -117,8 +117,8 @@ class SchedulePollServiceTest {
     void rejectReadByLeftMember() {
         MeetingMember leftMember = member(30L, meeting, user(2L, "member"));
         leftMember.leave();
-        when(meetings.findByIdAndDeletedAtIsNull(10L)).thenReturn(Optional.of(meeting));
-        when(members.findByMeetingIdAndUserId(10L, 2L)).thenReturn(Optional.of(leftMember));
+        when(meetings.findByIdAndDeletedAtIsNull(10L)).thenReturn(meeting);
+        when(members.findByMeetingIdAndUserId(10L, 2L)).thenReturn(leftMember);
 
         assertThrows(MeetingMemberAlreadyLeftException.class,
                 () -> service.getPoll(10L, 2L));

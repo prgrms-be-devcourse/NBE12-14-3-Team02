@@ -82,7 +82,7 @@ class MeetingInvitationServiceTest {
         when(
             meetingRepository
                 .findByIdAndDeletedAtIsNullForShare(10L)
-        ).thenReturn(Optional.of(meeting));
+        ).thenReturn(meeting);
 
         when(
             meetingInvitationRepository
@@ -129,7 +129,7 @@ class MeetingInvitationServiceTest {
         when(
             meetingRepository
                 .findByIdAndDeletedAtIsNullForShare(10L)
-        ).thenReturn(Optional.empty());
+        ).thenReturn(null);
 
         // when & then
         assertThrows(
@@ -173,24 +173,24 @@ class MeetingInvitationServiceTest {
 
         when(meetingInvitationRepository
             .findMeetingIdByInviteCode("invite-code"))
-            .thenReturn(Optional.of(10L));
+            .thenReturn(10L);
 
         when(
             meetingInvitationRepository
                 .findByInviteCode("invite-code")
-        ).thenReturn(Optional.of(invitation));
+        ).thenReturn(invitation);
 
         when(
             meetingRepository
                 .findByIdAndDeletedAtIsNullForUpdate(10L)
-        ).thenReturn(Optional.of(meeting));
+        ).thenReturn(meeting);
 
         when(userRepository.findById(2L))
             .thenReturn(Optional.of(user));
 
         when(meetingMemberRepository
             .findByMeetingIdAndUserIdForUpdate(10L, 2L))
-            .thenReturn(Optional.empty());
+            .thenReturn(null);
 
         when(
             meetingMemberRepository
@@ -278,24 +278,24 @@ class MeetingInvitationServiceTest {
 
         when(meetingInvitationRepository
             .findMeetingIdByInviteCode("invite-code"))
-            .thenReturn(Optional.of(10L));
+            .thenReturn(10L);
 
         when(
             meetingInvitationRepository
                 .findByInviteCode("invite-code")
-        ).thenReturn(Optional.of(invitation));
+        ).thenReturn(invitation);
 
         when(
             meetingRepository
                 .findByIdAndDeletedAtIsNullForUpdate(10L)
-        ).thenReturn(Optional.of(meeting));
+        ).thenReturn(meeting);
 
         when(userRepository.findById(2L))
             .thenReturn(Optional.of(user));
 
         when(meetingMemberRepository
             .findByMeetingIdAndUserIdForUpdate(10L, 2L))
-            .thenReturn(Optional.of(member));
+            .thenReturn(member);
 
         // when
         var response =
@@ -357,24 +357,24 @@ class MeetingInvitationServiceTest {
 
         when(meetingInvitationRepository
             .findMeetingIdByInviteCode("invite-code"))
-            .thenReturn(Optional.of(10L));
+            .thenReturn(10L);
 
         when(
             meetingInvitationRepository
                 .findByInviteCode("invite-code")
-        ).thenReturn(Optional.of(invitation));
+        ).thenReturn(invitation);
 
         when(
             meetingRepository
                 .findByIdAndDeletedAtIsNullForUpdate(10L)
-        ).thenReturn(Optional.of(meeting));
+        ).thenReturn(meeting);
 
         when(userRepository.findById(2L))
             .thenReturn(Optional.of(user));
 
         when(meetingMemberRepository
             .findByMeetingIdAndUserIdForUpdate(10L, 2L))
-            .thenReturn(Optional.of(member));
+            .thenReturn(member);
 
         // when & then
         AlreadyMeetingMemberException exception = assertThrows(
@@ -428,7 +428,7 @@ class MeetingInvitationServiceTest {
         when(
             meetingRepository
                 .findByIdAndDeletedAtIsNull(10L)
-        ).thenReturn(Optional.of(meeting));
+        ).thenReturn(meeting);
 
         when(
             meetingInvitationRepository
@@ -494,7 +494,7 @@ class MeetingInvitationServiceTest {
         when(
             meetingInvitationRepository
                 .findByInviteCode("invite-code")
-        ).thenReturn(Optional.of(invitation));
+        ).thenReturn(invitation);
 
         when(
             meetingMemberRepository
@@ -561,7 +561,7 @@ class MeetingInvitationServiceTest {
         when(
             meetingInvitationRepository
                 .findByInviteCode("invite-code")
-        ).thenReturn(Optional.of(invitation));
+        ).thenReturn(invitation);
 
         when(
             meetingMemberRepository
@@ -623,7 +623,7 @@ class MeetingInvitationServiceTest {
         when(
             meetingRepository
                 .findByIdAndDeletedAtIsNullForShare(10L)
-        ).thenReturn(Optional.of(meeting));
+        ).thenReturn(meeting);
 
         when(
             meetingInvitationRepository
@@ -662,7 +662,7 @@ class MeetingInvitationServiceTest {
         when(
             meetingRepository
                 .findByIdAndDeletedAtIsNullForShare(10L)
-        ).thenReturn(Optional.of(meeting));
+        ).thenReturn(meeting);
 
         // when & then
         assertThrows(
@@ -702,7 +702,7 @@ class MeetingInvitationServiceTest {
         when(
             meetingRepository
                 .findByIdAndDeletedAtIsNullForShare(10L)
-        ).thenReturn(Optional.of(meeting));
+        ).thenReturn(meeting);
 
         // when & then
         assertThrows(
@@ -740,7 +740,7 @@ class MeetingInvitationServiceTest {
         when(
             meetingRepository
                 .findByIdAndDeletedAtIsNullForShare(10L)
-        ).thenReturn(Optional.of(meeting));
+        ).thenReturn(meeting);
 
         when(
             meetingInvitationRepository
@@ -799,7 +799,7 @@ class MeetingInvitationServiceTest {
         when(
             meetingRepository
                 .findByIdAndDeletedAtIsNullForShare(10L)
-        ).thenReturn(Optional.of(meeting));
+        ).thenReturn(meeting);
 
         when(
             meetingInvitationRepository

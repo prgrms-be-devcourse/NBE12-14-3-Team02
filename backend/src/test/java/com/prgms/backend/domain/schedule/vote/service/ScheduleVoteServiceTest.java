@@ -54,9 +54,9 @@ class ScheduleVoteServiceTest {
         poll = poll(20L, meeting, LocalDateTime.now().plusDays(3));
         member = member(30L, meeting, user(2L, "member"));
         candidate = candidate(40L, poll, LocalDate.now().plusDays(1));
-        when(meetings.findByIdAndDeletedAtIsNullForShare(10L)).thenReturn(Optional.of(meeting));
+        when(meetings.findByIdAndDeletedAtIsNullForShare(10L)).thenReturn(meeting);
         when(polls.findByMeetingIdForShare(10L)).thenReturn(Optional.of(poll));
-        when(members.findByMeetingIdAndUserIdForUpdate(10L, 2L)).thenReturn(Optional.of(member));
+        when(members.findByMeetingIdAndUserIdForUpdate(10L, 2L)).thenReturn(member);
     }
 
     @Test

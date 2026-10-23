@@ -14,7 +14,6 @@ import com.prgms.backend.domain.content.repository.ContentPollRepository;
 import com.prgms.backend.domain.content.repository.ContentVoteRepository;
 import com.prgms.backend.domain.meeting.entity.Meeting;
 import com.prgms.backend.domain.meeting.entity.MeetingMember;
-import com.prgms.backend.domain.meeting.enums.MeetingMemberStatus;
 import com.prgms.backend.domain.meeting.repository.MeetingMemberRepository;
 import com.prgms.backend.domain.meeting.repository.MeetingRepository;
 import com.prgms.backend.global.exception.custom.content.*;
@@ -122,8 +121,10 @@ public class ContentPollService {
             ContentPollRequest.UpdateDeadline request
     ){
         // 마감 스케줄러와 같은 순서로 잠금
-        Meeting meeting = meetingRepository.findByIdAndDeletedAtIsNullForShare(meetingId)
-                .orElseThrow(() -> new MeetingNotFoundException(meetingId));
+        Meeting meeting = meetingRepository.findByIdAndDeletedAtIsNullForShare(meetingId);
+        if (meeting == null) {
+            throw new MeetingNotFoundException(meetingId);
+        }
         if(!meeting.isHost(userId)){
             throw new MeetingAccessDeniedException(meetingId, userId);
         }
@@ -138,9 +139,10 @@ public class ContentPollService {
     }
     //해당 미팅멤버 반환하는 함수
     private MeetingMember requireJoinedMember(Long meetingId, Long userId){
-        MeetingMember member = meetingMemberRepository
-                .findByMeetingIdAndUserId(meetingId,userId)
-                .orElseThrow(() -> new MeetingMemberNotFoundException(meetingId,userId));
+        MeetingMember member = meetingMemberRepository.findByMeetingIdAndUserId(meetingId,userId);
+        if (member == null) {
+            throw new MeetingMemberNotFoundException(meetingId,userId);
+        }
 
         if(!member.isJoined()){
             throw new MeetingAccessDeniedException(meetingId,userId);
@@ -305,8 +307,10 @@ public class ContentPollService {
             ContentPollRequest.Confirm request
     ){
         // 중복 확정 요청이 겹치지 않도록 Meeting 공유 잠금 -> 투표판 FOR UPDATE
-        Meeting meeting = meetingRepository.findByIdAndDeletedAtIsNullForShare(meetingId)
-                .orElseThrow(() -> new MeetingNotFoundException(meetingId));
+        Meeting meeting = meetingRepository.findByIdAndDeletedAtIsNullForShare(meetingId);
+        if (meeting == null) {
+            throw new MeetingNotFoundException(meetingId);
+        }
         if (!meeting.isHost(userId)){
             throw new MeetingAccessDeniedException(meetingId, userId);
         }

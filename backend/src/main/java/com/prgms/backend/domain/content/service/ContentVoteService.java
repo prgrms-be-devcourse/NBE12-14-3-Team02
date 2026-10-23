@@ -73,9 +73,10 @@ public class ContentVoteService {
     }
 
     private MeetingMember requireJoinedMember(Long meetingId, Long userId){
-        MeetingMember member = meetingMemberRepository
-                .findByMeetingIdAndUserId(meetingId,userId)
-                .orElseThrow(() -> new MeetingMemberNotFoundException(meetingId,userId));
+        MeetingMember member = meetingMemberRepository.findByMeetingIdAndUserId(meetingId,userId);
+        if (member == null) {
+            throw new MeetingMemberNotFoundException(meetingId,userId);
+        }
 
         if(!member.isJoined()){
             throw new MeetingAccessDeniedException(meetingId,userId);

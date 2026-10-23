@@ -92,15 +92,15 @@ class MeetingMemberServiceTest {
         // 정산 없음 + 일반 모임원은 지출 관련자가 아님
         when(meetingRepository
             .findByIdAndDeletedAtIsNullForUpdate(10L))
-            .thenReturn(Optional.of(meeting));
+            .thenReturn(meeting);
 
         when(meetingMemberRepository
             .findByMeetingIdAndUserId(10L, 1L))
-            .thenReturn(Optional.of(hostMember));
+            .thenReturn(hostMember);
 
         when(meetingMemberRepository
             .findByMeetingIdAndUserId(10L, 2L))
-            .thenReturn(Optional.of(member));
+            .thenReturn(member);
 
         when(settlementRepository.findByMeetingId(10L))
             .thenReturn(Optional.empty());
@@ -294,7 +294,7 @@ class MeetingMemberServiceTest {
         // given
         when(meetingRepository
             .findByIdAndDeletedAtIsNullForUpdate(10L))
-            .thenReturn(Optional.empty());
+            .thenReturn(null);
 
         // when & then
         assertThrows(
@@ -317,7 +317,7 @@ class MeetingMemberServiceTest {
         // given
         when(meetingMemberRepository
             .findByMeetingIdAndUserId(10L, 2L))
-            .thenReturn(Optional.empty());
+            .thenReturn(null);
 
         // when & then
         assertThrows(
@@ -365,7 +365,7 @@ class MeetingMemberServiceTest {
     void getMeetingMembers_success() {
         // given
         when(meetingRepository.findByIdAndDeletedAtIsNull(10L))
-            .thenReturn(Optional.of(meeting));
+            .thenReturn(meeting);
 
         when(meetingMemberRepository
             .existsByMeetingIdAndUserIdAndStatus(
@@ -401,7 +401,7 @@ class MeetingMemberServiceTest {
     void getMeetingMembers_notJoined() {
         // given
         when(meetingRepository.findByIdAndDeletedAtIsNull(10L))
-            .thenReturn(Optional.of(meeting));
+            .thenReturn(meeting);
 
         when(meetingMemberRepository
             .existsByMeetingIdAndUserIdAndStatus(
@@ -429,7 +429,7 @@ class MeetingMemberServiceTest {
     void getMeetingMembers_meetingNotFound() {
         // given
         when(meetingRepository.findByIdAndDeletedAtIsNull(10L))
-            .thenReturn(Optional.empty());
+            .thenReturn(null);
 
         // when & then
         assertThrows(

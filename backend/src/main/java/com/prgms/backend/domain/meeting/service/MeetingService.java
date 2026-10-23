@@ -80,8 +80,10 @@ public class MeetingService {
     public MeetingResponse getMeeting(Long meetingId, Long userId) {
 
         // ACTIVE/COMPLETED 상태의 모임 상세 조회 가능, soft deleted 상태의 모임 조회 불가능
-        Meeting meeting = meetingRepository.findByIdAndDeletedAtIsNull(meetingId)
-            .orElseThrow(() -> new MeetingNotFoundException(meetingId));
+        Meeting meeting = meetingRepository.findByIdAndDeletedAtIsNull(meetingId);
+        if (meeting == null) {
+            throw new MeetingNotFoundException(meetingId);
+        }
 
         // status 값까지 넣어서 현재 ACTIVE 상태로 모임에 참여 중인 모임원인지 검사
         boolean isMember =
@@ -158,9 +160,10 @@ public class MeetingService {
         MeetingUpdateRequest request
     ){
         // 진행 중인 미팅인지 검사
-        Meeting meeting = meetingRepository
-            .findByIdAndDeletedAtIsNullForUpdate(meetingId)
-            .orElseThrow(() -> new MeetingNotFoundException(meetingId));
+        Meeting meeting = meetingRepository.findByIdAndDeletedAtIsNullForUpdate(meetingId);
+        if (meeting == null) {
+            throw new MeetingNotFoundException(meetingId);
+        }
 
         // 모임장이 아닌 참여자가 모임 수정을 시도하는 경우
         if(!meeting.isHost(userId)){
@@ -187,9 +190,10 @@ public class MeetingService {
     ) {
         // 존재하며 soft delete되지 않은 모임인지 확인
         // 모임 종료와 동시에 다른 요청 들어오는 것 방지
-        Meeting meeting = meetingRepository
-            .findByIdAndDeletedAtIsNullForUpdate(meetingId)
-            .orElseThrow(() -> new MeetingNotFoundException(meetingId));
+        Meeting meeting = meetingRepository.findByIdAndDeletedAtIsNullForUpdate(meetingId);
+        if (meeting == null) {
+            throw new MeetingNotFoundException(meetingId);
+        }
 
         // 모임장만 종료 가능
         if (!meeting.isHost(userId)) {

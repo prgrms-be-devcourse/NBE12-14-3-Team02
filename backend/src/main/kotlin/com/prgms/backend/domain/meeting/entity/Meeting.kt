@@ -50,7 +50,7 @@ class Meeting(
         protected set
 
     // 이 모임에서 특정 모임원이 모임장인지 검사
-    fun isHost(userId: Long?): Boolean = host.id == userId
+    fun isHost(userId: Long): Boolean = host.id == userId
 
     // 모임 수정
     fun update(
