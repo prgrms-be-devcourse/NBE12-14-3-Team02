@@ -1,6 +1,6 @@
 package com.prgms.backend.domain.content.service;
 
-import com.prgms.backend.domain.content.ENUM.ContentPollStatus;
+import com.prgms.backend.domain.content.enums.ContentPollStatus;
 import com.prgms.backend.domain.content.dto.request.ContentCandidateRequest;
 import com.prgms.backend.domain.content.dto.response.ContentCandidateResponse;
 import com.prgms.backend.domain.content.entity.ContentCandidate;
@@ -100,8 +100,10 @@ public class ContentCandidateService {
 
     //열려있는 투표판을 가져옴
     private ContentPoll getOpenPoll(Long meetingId){
-        ContentPoll poll = contentPollRepository.findByMeetingId(meetingId)
-                .orElseThrow(() -> new ContentPollNotFoundException(meetingId));
+        ContentPoll poll = contentPollRepository.findByMeetingId(meetingId);
+        if (poll == null) {
+            throw new ContentPollNotFoundException(meetingId);
+        }
         if(poll.getStatus() == ContentPollStatus.CLOSED){
             throw new ContentPollClosedException();
         }

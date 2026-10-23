@@ -67,7 +67,7 @@ class ContentCandidateServiceTest {
         candidate = candidate(CANDIDATE_ID, poll, MEMBER_ID, "기존 후보");
 
         when(meetingMemberRepository.findByMeetingIdAndUserId(MEETING_ID, USER_ID)).thenReturn(member);
-        when(contentPollRepository.findByMeetingId(MEETING_ID)).thenReturn(Optional.of(poll));
+        when(contentPollRepository.findByMeetingId(MEETING_ID)).thenReturn(poll);
         when(contentCandidateRepository.findById(CANDIDATE_ID)).thenReturn(Optional.of(candidate));
         when(contentCandidateRepository.save(any(ContentCandidate.class)))
                 .thenAnswer(invocation -> filled(invocation.getArgument(0)));

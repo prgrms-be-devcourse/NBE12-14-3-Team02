@@ -1,6 +1,6 @@
 package com.prgms.backend.domain.content.dto.request;
 
-import com.prgms.backend.domain.content.ENUM.ContentPreference;
+import com.prgms.backend.domain.content.enums.ContentPreference;
 import jakarta.validation.constraints.NotNull;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;

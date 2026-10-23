@@ -1,6 +1,6 @@
 package com.prgms.backend.domain.meeting;
 
-import com.prgms.backend.domain.content.ENUM.ContentPollStatus;
+import com.prgms.backend.domain.content.enums.ContentPollStatus;
 import com.prgms.backend.domain.content.repository.ContentPollRepository;
 import com.prgms.backend.domain.expense.repository.ExpenseRepository;
 import com.prgms.backend.domain.meeting.dto.request.MeetingCreateRequest;

@@ -1,6 +1,6 @@
 package com.prgms.backend.domain.content;
 
-import com.prgms.backend.domain.content.ENUM.ContentPollStatus;
+import com.prgms.backend.domain.content.enums.ContentPollStatus;
 import com.prgms.backend.domain.content.entity.ContentPoll;
 import com.prgms.backend.domain.content.integration.ContentPollClosedEvent;
 import com.prgms.backend.domain.content.repository.ContentPollRepository;
@@ -14,7 +14,6 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDateTime;
-import java.util.Optional;
 
 import static com.prgms.backend.domain.schedule.support.ScheduleTestFixtures.meeting;
 import static com.prgms.backend.domain.schedule.support.ScheduleTestFixtures.user;
@@ -44,9 +43,9 @@ class ContentPollCloseServiceTest {
         meeting = meeting(MEETING_ID, user(1L, "host"));
         poll = poll(LocalDateTime.now().minusMinutes(1));
 
-        when(contentPollRepository.findMeetingIdByPollId(POLL_ID)).thenReturn(Optional.of(MEETING_ID));
+        when(contentPollRepository.findMeetingIdByPollId(POLL_ID)).thenReturn(MEETING_ID);
         when(meetingRepository.findByIdAndDeletedAtIsNullForShare(MEETING_ID)).thenReturn(meeting);
-        when(contentPollRepository.findByIdForUpdate(POLL_ID)).thenReturn(Optional.of(poll));
+        when(contentPollRepository.findByIdForUpdate(POLL_ID)).thenReturn(poll);
     }
 
     private ContentPoll poll(LocalDateTime deadline) {

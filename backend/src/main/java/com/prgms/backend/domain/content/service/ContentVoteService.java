@@ -1,6 +1,6 @@
 package com.prgms.backend.domain.content.service;
 
-import com.prgms.backend.domain.content.ENUM.ContentPollStatus;
+import com.prgms.backend.domain.content.enums.ContentPollStatus;
 import com.prgms.backend.domain.content.dto.request.ContentVoteRequest;
 import com.prgms.backend.domain.content.dto.response.ContentVoteResponse;
 import com.prgms.backend.domain.content.entity.ContentCandidate;
@@ -42,21 +42,23 @@ public class ContentVoteService {
 
         //투표가 있으면 변경, 없으면 추가
         ContentVote vote = contentVoteRepository
-                .findByContentCandidateIdAndMeetingMemberId(candidate.getId(), meetingMemberId)
-                .map(existing -> {
-                    existing.changePreference(request.preference());
-                    return existing;
-                })
-                .orElseGet(() -> contentVoteRepository.save(
-                        new ContentVote(candidate, meetingMemberId, request.preference())
-                ));
+                .findByContentCandidateIdAndMeetingMemberId(candidate.getId(), meetingMemberId);
+        if (vote != null) {
+            vote.changePreference(request.preference());
+        } else {
+            vote = contentVoteRepository.save(
+                    new ContentVote(candidate, meetingMemberId, request.preference())
+            );
+        }
 
         return ContentVoteResponse.Saved.from(vote);
     }
 
     private ContentPoll getOpenPoll(Long meetingId){
-        ContentPoll poll = contentPollRepository.findByMeetingId(meetingId)
-                .orElseThrow(() -> new ContentPollNotFoundException(meetingId));
+        ContentPoll poll = contentPollRepository.findByMeetingId(meetingId);
+        if (poll == null) {
+            throw new ContentPollNotFoundException(meetingId);
+        }
         if(poll.getStatus() == ContentPollStatus.CLOSED){
             throw new ContentPollClosedException();
         }

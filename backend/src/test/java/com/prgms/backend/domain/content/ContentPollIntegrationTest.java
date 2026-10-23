@@ -1,8 +1,8 @@
 package com.prgms.backend.domain.content;
 
-import com.prgms.backend.domain.content.ENUM.ContentPollResultSort;
-import com.prgms.backend.domain.content.ENUM.ContentPollStatus;
-import com.prgms.backend.domain.content.ENUM.ContentPreference;
+import com.prgms.backend.domain.content.enums.ContentPollResultSort;
+import com.prgms.backend.domain.content.enums.ContentPollStatus;
+import com.prgms.backend.domain.content.enums.ContentPreference;
 import com.prgms.backend.domain.content.dto.request.ContentVoteRequest;
 import com.prgms.backend.domain.content.dto.response.ContentPollResultsResponse;
 import com.prgms.backend.domain.content.entity.ContentCandidate;
@@ -294,7 +294,7 @@ class ContentPollIntegrationTest {
     }
 
     private ContentCandidate candidate(String title, MeetingMember creator) {
-        ContentPoll poll = pollRepository.findByMeetingId(meetingId).orElseThrow();
+        ContentPoll poll = pollRepository.findByMeetingId(meetingId);
         return candidateRepository.save(new ContentCandidate(poll, creator.getId(), title, ""));
     }
 

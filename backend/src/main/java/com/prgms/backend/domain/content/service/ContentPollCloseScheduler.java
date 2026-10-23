@@ -1,6 +1,6 @@
 package com.prgms.backend.domain.content.service;
 
-import com.prgms.backend.domain.content.ENUM.ContentPollStatus;
+import com.prgms.backend.domain.content.enums.ContentPollStatus;
 import com.prgms.backend.domain.content.repository.ContentPollRepository;
 import com.prgms.backend.domain.meeting.enums.MeetingStatus;
 import lombok.RequiredArgsConstructor;

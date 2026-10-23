@@ -1,6 +1,6 @@
 package com.prgms.backend.domain.content.service;
 
-import com.prgms.backend.domain.content.ENUM.ContentPollStatus;
+import com.prgms.backend.domain.content.enums.ContentPollStatus;
 import com.prgms.backend.domain.content.entity.ContentPoll;
 import com.prgms.backend.domain.content.integration.ContentPollClosedEvent;
 import com.prgms.backend.domain.content.repository.ContentPollRepository;
@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.NoSuchElementException;
 
 @Service
 @RequiredArgsConstructor
@@ -28,9 +29,10 @@ public class ContentPollCloseService {
     public void closeOneIfExpired(Long pollId) {
 
         // 투표판이 어느 Meeting 소속인지 확인
-        Long meetingId = contentPollRepository
-                .findMeetingIdByPollId(pollId)
-                .orElseThrow();
+        Long meetingId = contentPollRepository.findMeetingIdByPollId(pollId);
+        if (meetingId == null) {
+            throw new NoSuchElementException("No value present");
+        }
 
         // Meeting을 먼저 공유 잠금
         Meeting meeting = meetingRepository
@@ -46,9 +48,10 @@ public class ContentPollCloseService {
             return;
         }
 
-        ContentPoll poll = contentPollRepository
-                .findByIdForUpdate(pollId)
-                .orElseThrow(() -> new ContentPollNotFoundException(meetingId));
+        ContentPoll poll = contentPollRepository.findByIdForUpdate(pollId);
+        if (poll == null) {
+            throw new ContentPollNotFoundException(meetingId);
+        }
 
         LocalDateTime now = LocalDateTime.now();
 
