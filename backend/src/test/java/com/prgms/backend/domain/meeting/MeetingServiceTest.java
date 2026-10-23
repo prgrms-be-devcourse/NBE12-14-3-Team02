@@ -129,10 +129,10 @@ class MeetingServiceTest {
             );
 
         // then
-        assertEquals(10L, response.id());
-        assertEquals(1L, response.hostId());
-        assertEquals("제주도 여행", response.name());
-        assertEquals(1L, response.participantCount());
+        assertEquals(10L, response.getId());
+        assertEquals(1L, response.getHostId());
+        assertEquals("제주도 여행", response.getName());
+        assertEquals(1L, response.getParticipantCount());
 
         verify(meetingRepository)
             .save(any(Meeting.class));
@@ -201,9 +201,9 @@ class MeetingServiceTest {
             );
 
         // then
-        assertEquals(10L, response.id());
-        assertEquals("제주도 여행", response.name());
-        assertEquals(3L, response.participantCount());
+        assertEquals(10L, response.getId());
+        assertEquals("제주도 여행", response.getName());
+        assertEquals(3L, response.getParticipantCount());
     }
 
     @Test
@@ -320,22 +320,22 @@ class MeetingServiceTest {
 
         assertEquals(
             "여행 모임",
-            responses.get(0).name()
+            responses.get(0).getName()
         );
 
         assertEquals(
             "스터디 모임",
-            responses.get(1).name()
+            responses.get(1).getName()
         );
 
         assertEquals(
             2L,
-            responses.get(0).participantCount()
+            responses.get(0).getParticipantCount()
         );
 
         assertEquals(
             4L,
-            responses.get(1).participantCount()
+            responses.get(1).getParticipantCount()
         );
     }
 
@@ -426,12 +426,12 @@ class MeetingServiceTest {
         // then
         assertEquals(
             "수정된 모임",
-            response.name()
+            response.getName()
         );
 
         assertEquals(
             "수정된 설명",
-            response.description()
+            response.getDescription()
         );
     }
 
@@ -508,7 +508,7 @@ class MeetingServiceTest {
         // then
         assertEquals(
             MeetingStatus.COMPLETED,
-            response.status()
+            response.getStatus()
         );
     }
 
@@ -565,7 +565,7 @@ class MeetingServiceTest {
         // then
         assertEquals(
             MeetingStatus.COMPLETED,
-            response.status()
+            response.getStatus()
         );
     }
 

@@ -7,7 +7,6 @@ import com.prgms.backend.domain.meeting.service.MeetingService;
 import com.prgms.backend.domain.user.entity.SecurityUser;
 import com.prgms.backend.global.ApiResponse;
 import jakarta.validation.Valid;
-import java.security.Security;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;

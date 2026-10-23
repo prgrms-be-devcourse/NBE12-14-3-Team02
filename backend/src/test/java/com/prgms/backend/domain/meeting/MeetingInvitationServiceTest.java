@@ -109,13 +109,13 @@ class MeetingInvitationServiceTest {
             );
 
         // then
-        assertEquals(100L, response.id());
-        assertEquals(10L, response.meetingId());
+        assertEquals(100L, response.getId());
+        assertEquals(10L, response.getMeetingId());
 
-        assertNotNull(response.inviteCode());
-        assertFalse(response.inviteCode().isBlank());
+        assertNotNull(response.getInviteCode());
+        assertFalse(response.getInviteCode().isBlank());
 
-        assertNotNull(response.expiresAt());
+        assertNotNull(response.getExpiresAt());
 
         verify(meetingInvitationRepository)
             .save(any(MeetingInvitation.class));
@@ -217,10 +217,10 @@ class MeetingInvitationServiceTest {
             );
 
         // then
-        assertEquals(200L, response.id());
-        assertEquals(10L, response.meetingId());
-        assertEquals(2L, response.userId());
-        assertEquals(MeetingMemberStatus.JOINED, response.status());
+        assertEquals(200L, response.getId());
+        assertEquals(10L, response.getMeetingId());
+        assertEquals(2L, response.getUserId());
+        assertEquals(MeetingMemberStatus.JOINED, response.getStatus());
 
         // 가입 여부 판단에 사용할 조회가 호출됐는지 확인
         verify(meetingMemberRepository)
@@ -305,14 +305,14 @@ class MeetingInvitationServiceTest {
             );
 
         // then
-        assertEquals(MeetingMemberStatus.JOINED, response.status());
+        assertEquals(MeetingMemberStatus.JOINED, response.getStatus());
 
-        assertEquals(200L, response.id());
-        assertEquals(10L, response.meetingId());
-        assertEquals(2L, response.userId());
+        assertEquals(200L, response.getId());
+        assertEquals(10L, response.getMeetingId());
+        assertEquals(2L, response.getUserId());
 
         // 재가입하면 기존 탈퇴 시각 해제
-        assertNull(response.leftAt());
+        assertNull(response.getLeftAt());
 
         // 기존 MeetingMember를 재사용하므로 새로 저장X
         verify(meetingMemberRepository, never())
@@ -452,17 +452,17 @@ class MeetingInvitationServiceTest {
 
         assertEquals(
             "invite-code-1",
-            responses.get(0).inviteCode()
+            responses.get(0).getInviteCode()
         );
 
         assertEquals(
             "invite-code-2",
-            responses.get(1).inviteCode()
+            responses.get(1).getInviteCode()
         );
 
         assertEquals(
             10L,
-            responses.get(0).meetingId()
+            responses.get(0).getMeetingId()
         );
     }
 
@@ -515,21 +515,21 @@ class MeetingInvitationServiceTest {
         // then
         assertEquals(
             "invite-code",
-            response.inviteCode()
+            response.getInviteCode()
         );
 
         assertEquals(
             10L,
-            response.meetingId()
+            response.getMeetingId()
         );
 
         assertEquals(
             "제주도 여행",
-            response.meetingName()
+            response.getMeetingName()
         );
 
         assertFalse(
-            response.alreadyJoined()
+            response.getAlreadyJoined()
         );
     }
 
@@ -582,16 +582,16 @@ class MeetingInvitationServiceTest {
         // then
         assertEquals(
             10L,
-            response.meetingId()
+            response.getMeetingId()
         );
 
         assertEquals(
             "제주도 여행",
-            response.meetingName()
+            response.getMeetingName()
         );
 
         assertTrue(
-            response.alreadyJoined()
+            response.getAlreadyJoined()
         );
     }
 

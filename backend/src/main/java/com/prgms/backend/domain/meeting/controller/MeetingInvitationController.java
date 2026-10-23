@@ -3,11 +3,9 @@ package com.prgms.backend.domain.meeting.controller;
 import com.prgms.backend.domain.meeting.dto.response.MeetingInvitationDetailResponse;
 import com.prgms.backend.domain.meeting.dto.response.MeetingInvitationResponse;
 import com.prgms.backend.domain.meeting.dto.response.MeetingMemberResponse;
-import com.prgms.backend.domain.meeting.entity.MeetingInvitation;
 import com.prgms.backend.domain.meeting.service.MeetingInvitationService;
 import com.prgms.backend.domain.user.entity.SecurityUser;
 import com.prgms.backend.global.ApiResponse;
-import io.jsonwebtoken.Jwt;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -18,7 +16,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
