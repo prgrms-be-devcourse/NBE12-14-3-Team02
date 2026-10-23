@@ -21,6 +21,7 @@ import com.prgms.backend.global.exception.custom.meeting.MeetingNotFoundExceptio
 import com.prgms.backend.global.exception.custom.user.UserNotFoundException;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -276,7 +277,7 @@ public class MeetingInvitationService {
             .orElseThrow(() -> new MeetingInvitationNotFoundException(invitationId));
 
         // 다른 모임의 초대 코드를 삭제하려는 경우
-        if (!invitation.getMeeting().getId().equals(meetingId)) {
+        if (!Objects.equals(invitation.getMeeting().getId(), meetingId)) {
             throw new MeetingInvitationNotFoundException(invitationId);
         }
 

@@ -123,6 +123,50 @@ class MeetingIntegrationTest {
     }
 
     @Test
+    @DisplayName("모임은 ID 0으로 신규 저장하고 재조회 후 감사 필드·지연 로딩·상태 변경을 유지한다")
+    void meetingEntity_persistReloadAndLifecycle() {
+        Meeting newMeeting = new Meeting(host, "새 모임", null);
+        assertEquals(0L, newMeeting.getId());
+        meetings.saveAndFlush(newMeeting);
+        long meetingId = newMeeting.getId();
+        assertTrue(meetingId > 0L);
+        flushAndClear();
+
+        Meeting loaded = meetings.findById(meetingId).orElseThrow();
+        assertFalse(entityManager.getEntityManagerFactory().getPersistenceUnitUtil().isLoaded(loaded, "host"));
+        assertEquals("모임장", loaded.getHost().getNickname());
+        assertEquals("새 모임", loaded.getName());
+        assertNull(loaded.getDescription());
+        assertNotNull(loaded.getCreatedAt());
+        assertNotNull(loaded.getUpdatedAt());
+        assertTrue(loaded.isHost(host.getId()));
+        assertFalse(loaded.isHost(member.getId()));
+        assertFalse(loaded.isHost(null));
+        assertTrue(loaded.isActive());
+        assertFalse(loaded.isCompleted());
+        assertFalse(loaded.isDeleted());
+
+        loaded.update("수정한 모임", "수정한 설명");
+        loaded.complete();
+        flushAndClear();
+        Meeting completed = meetings.findById(meetingId).orElseThrow();
+        assertEquals("수정한 모임", completed.getName());
+        assertEquals("수정한 설명", completed.getDescription());
+        assertEquals(MeetingStatus.COMPLETED, completed.getStatus());
+        assertFalse(completed.isActive());
+        assertTrue(completed.isCompleted());
+        assertFalse(completed.isDeleted());
+
+        completed.softDelete();
+        flushAndClear();
+        Meeting deleted = meetings.findById(meetingId).orElseThrow();
+        assertNotNull(deleted.getDeletedAt());
+        assertFalse(deleted.isActive());
+        assertFalse(deleted.isCompleted());
+        assertTrue(deleted.isDeleted());
+    }
+
+    @Test
     @DisplayName("모임원은 ID 0으로 신규 저장하고 재조회 후 지연 로딩과 탈퇴·재가입을 유지한다")
     void memberEntity_persistReloadAndRejoin() {
         MeetingMember newMember = new MeetingMember(meeting, member);
@@ -519,7 +563,7 @@ class MeetingIntegrationTest {
         flushAndClear();
         MeetingMember saved = memberRecord(member);
         assertEquals(saved.getId(), response.path("id").asLong());
-        assertEquals(meeting.getId().longValue(), response.path("meetingId").asLong());
+        assertEquals(meeting.getId(), response.path("meetingId").asLong());
         assertEquals(member.getId(), response.path("userId").asLong());
         assertEquals("JOINED", response.path("status").asString());
         assertEquals(MeetingMemberStatus.JOINED, saved.getStatus());
