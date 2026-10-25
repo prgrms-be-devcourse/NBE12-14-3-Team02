@@ -178,7 +178,7 @@ class ScheduleControllerIntegrationTest {
                     .andReturn();
 
             flushAndClear();
-            SchedulePoll saved = polls.findByMeetingId(meeting.getId()).orElseThrow();
+            SchedulePoll saved = java.util.Objects.requireNonNull(polls.findByMeetingId(meeting.getId()));
             long responseId = jsonMapper.readTree(result.getResponse().getContentAsString()).path("data").path("id").asLong();
             assertEquals(saved.getId(), responseId);
             assertEquals(deadline, saved.getDeadline());
@@ -208,7 +208,7 @@ class ScheduleControllerIntegrationTest {
                     .andExpect(jsonPath("$.data.deadline").value(updated.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)))
                     .andExpect(jsonPath("$.data.status").value("OPEN"));
             flushAndClear();
-            assertEquals(updated, polls.findByMeetingId(meeting.getId()).orElseThrow().getDeadline());
+            assertEquals(updated, java.util.Objects.requireNonNull(polls.findByMeetingId(meeting.getId())).getDeadline());
         }
 
         @ParameterizedTest
@@ -230,7 +230,7 @@ class ScheduleControllerIntegrationTest {
             expectValidationError(perform(request(HttpMethod.valueOf(method), url), host,
                     Map.of("deadline", LocalDateTime.now().minusDays(1))),
                     "deadline", "마감 시간은 현재보다 이후여야 합니다.");
-            assertEquals(deadline, polls.findByMeetingId(meeting.getId()).orElseThrow().getDeadline());
+            assertEquals(deadline, java.util.Objects.requireNonNull(polls.findByMeetingId(meeting.getId())).getDeadline());
         }
 
         @Test
@@ -390,7 +390,7 @@ class ScheduleControllerIntegrationTest {
             ScheduleCandidate saved = candidates.findById(responseId).orElseThrow();
             assertEquals(next, saved.getCandidateDate());
             assertEquals(poll.getId(), saved.getSchedulePoll().getId());
-            assertEquals(2, polls.findByMeetingIdWithCandidates(meeting.getId()).orElseThrow().getCandidates().size());
+            assertEquals(2, java.util.Objects.requireNonNull(polls.findByMeetingIdWithCandidates(meeting.getId())).getCandidates().size());
         }
 
         @Test
@@ -523,8 +523,8 @@ class ScheduleControllerIntegrationTest {
                     .andExpect(jsonPath("$.data.meetingMemberId").value(joinedMember.getId()))
                     .andExpect(jsonPath("$.data.preference").value(preference.name()));
             flushAndClear();
-            assertEquals(preference, votes.findByScheduleCandidateIdAndMeetingMemberId(
-                    candidate.getId(), joinedMember.getId()).orElseThrow().getPreference());
+            assertEquals(preference, java.util.Objects.requireNonNull(votes.findByScheduleCandidateIdAndMeetingMemberId(
+                    candidate.getId(), joinedMember.getId())).getPreference());
         }
 
         @Test
@@ -533,14 +533,14 @@ class ScheduleControllerIntegrationTest {
             givenPoll(deadline);
             perform(put(voteUrl), member, Map.of("preference", "PREFER")).andExpect(status().isOk());
             flushAndClear();
-            Long originalId = votes.findByScheduleCandidateIdAndMeetingMemberId(
-                    candidate.getId(), joinedMember.getId()).orElseThrow().getId();
+            Long originalId = java.util.Objects.requireNonNull(votes.findByScheduleCandidateIdAndMeetingMemberId(
+                    candidate.getId(), joinedMember.getId())).getId();
             perform(put(voteUrl), member, Map.of("preference", "IMPOSSIBLE"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.data.preference").value("IMPOSSIBLE"));
             flushAndClear();
-            ScheduleVote saved = votes.findByScheduleCandidateIdAndMeetingMemberId(
-                    candidate.getId(), joinedMember.getId()).orElseThrow();
+            ScheduleVote saved = java.util.Objects.requireNonNull(votes.findByScheduleCandidateIdAndMeetingMemberId(
+                    candidate.getId(), joinedMember.getId()));
             assertEquals(originalId, saved.getId());
             assertEquals(SchedulePreference.IMPOSSIBLE, saved.getPreference());
             assertEquals(1, votes.findAllByScheduleCandidateSchedulePollId(poll.getId()).size());

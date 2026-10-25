@@ -270,7 +270,7 @@ public class ScheduleResultService {
 
     private SchedulePoll getClosedSchedulePoll(Long meetingId) {
         SchedulePoll schedulePoll =
-                schedulePollRepository.findByMeetingId(meetingId)
+                java.util.Optional.ofNullable(schedulePollRepository.findByMeetingId(meetingId))
                         .orElseThrow(
                                 () -> new SchedulePollNotFoundException(meetingId)
                         );

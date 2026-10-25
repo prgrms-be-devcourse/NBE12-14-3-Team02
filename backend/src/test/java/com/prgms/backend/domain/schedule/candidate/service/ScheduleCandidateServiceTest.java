@@ -19,7 +19,6 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.Optional;
 
 import static com.prgms.backend.domain.schedule.support.ScheduleTestFixtures.*;
 import static org.junit.jupiter.api.Assertions.*;
@@ -43,7 +42,7 @@ class ScheduleCandidateServiceTest {
         poll = poll(20L, meeting, LocalDateTime.now().plusDays(3));
         firstDate = LocalDate.now().plusDays(1);
         when(meetings.findByIdAndDeletedAtIsNullForShare(10L)).thenReturn(meeting);
-        when(polls.findByMeetingIdForUpdate(10L)).thenReturn(Optional.of(poll));
+        when(polls.findByMeetingIdForUpdate(10L)).thenReturn(poll);
     }
 
     @Test
@@ -119,7 +118,7 @@ class ScheduleCandidateServiceTest {
         assertThrows(MeetingHostRequiredException.class,
                 () -> service.createCandidate(10L, 2L, new ScheduleCandidateRequest.Create(firstDate)));
 
-        verify(polls, never()).findByMeetingIdForUpdate(any());
+        verify(polls, never()).findByMeetingIdForUpdate(org.mockito.ArgumentMatchers.anyLong());
     }
 
     @Test

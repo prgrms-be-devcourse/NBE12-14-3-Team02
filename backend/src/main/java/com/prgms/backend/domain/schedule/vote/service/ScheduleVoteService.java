@@ -65,11 +65,11 @@ public class ScheduleVoteService {
             MeetingMember meetingMember,
             SchedulePreference preference
     ) {
-        return scheduleVoteRepository
+        return java.util.Optional.ofNullable(scheduleVoteRepository
                 .findByScheduleCandidateIdAndMeetingMemberId(
                         candidate.getId(),
                         meetingMember.getId()
-                )
+                ))
                 .map(existingVote -> {
                     existingVote.changePreference(preference);
                     return existingVote;
@@ -90,7 +90,7 @@ public class ScheduleVoteService {
     }
 
     private SchedulePoll getPollWithSharedLock(Long meetingId){
-        return schedulePollRepository.findByMeetingIdForShare(meetingId)
+        return java.util.Optional.ofNullable(schedulePollRepository.findByMeetingIdForShare(meetingId))
                 .orElseThrow(
                         () -> new SchedulePollNotFoundException(meetingId)
                 );

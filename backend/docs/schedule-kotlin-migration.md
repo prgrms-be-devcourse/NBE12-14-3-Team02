@@ -33,7 +33,7 @@
 ## 검증
 
 - 변경 전 `ktlintCheck test`로 기준 상태를 확인한다.
-- 각 단계에서 `ktlintFormat` 후 범위를 확인하고 `ktlintCheck test`를 실행한다.
+- 각 단계에서 `ktlintFormat` 후 범위를 확인하고 `ktlintCheck`와 schedule 테스트를 실행한다. 마지막 단계에서는 필터 없이 `ktlintCheck test`로 전체 회귀 검증을 한다.
 - 기존 schedule 단위·API·MySQL 동시성 테스트와 타 도메인 연동 테스트를 실행한다.
 - 엔티티 저장 → flush/clear → 재조회, 감사 필드, 지연 로딩, 후보 컬렉션 추가·삭제를 확인하는 회귀 검증을 보완한다.
 - DTO 누락·명시적 null·과거 날짜·잘못된 enum의 상태 코드와 메시지를 확인한다.
@@ -42,3 +42,7 @@
 ## 실행 기록
 
 - 계획 수립: 작업 트리 clean, Java 25 설치와 Docker 실행 확인.
+- 변경 전 전체 테스트는 로컬 MySQL 미실행으로 연결 실패. `docker compose up -d mysql`로 프로젝트 DB를 시작했다.
+- Windows Testcontainers 연결 대기가 길어져 해당 실행을 중단하고, 실행 프로세스에 `TESTCONTAINERS_HOST_OVERRIDE=127.0.0.1`을 지정한 뒤 정상 연결을 확인했다. 저장소 설정은 변경하지 않았다.
+- 1단계: `ktlintFormat`, `ktlintCheck`, schedule 테스트 **83개 통과**. flush/clear 이후 연관관계·감사 필드·컬렉션 추가·orphanRemoval 회귀 검증을 추가했다.
+- 2단계 호환성: Java Mockito의 `any()`는 Kotlin `Long`에서 null 언박싱 오류를 일으켜 해당 ID matcher를 `anyLong()`으로 변경했다. nullable 조회에 맞춰 테스트 fixture와 마감 동시성 spy 반환값도 변경했다.

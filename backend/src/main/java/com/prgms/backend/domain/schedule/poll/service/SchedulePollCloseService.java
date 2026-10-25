@@ -27,8 +27,8 @@ public class SchedulePollCloseService {
     public void closeOneIfExpired(Long pollId) {
 
         // Poll이 어느 Meeting 소속인지 확인
-        Long meetingId = schedulePollRepository
-                .findMeetingIdByPollId(pollId)
+        Long meetingId = java.util.Optional.ofNullable(schedulePollRepository
+                .findMeetingIdByPollId(pollId))
                 .orElse(null);
         if (meetingId == null) {
             return;
@@ -49,8 +49,8 @@ public class SchedulePollCloseService {
         }
 
         //투표소를 잠근다. 더 이상 투표할 수 없고, 후보를 추가할 수도 없음
-        SchedulePoll poll = schedulePollRepository
-                .findByIdForUpdate(pollId)
+        SchedulePoll poll = java.util.Optional.ofNullable(schedulePollRepository
+                .findByIdForUpdate(pollId))
                 .orElse(null);
 
         if (poll == null) {
