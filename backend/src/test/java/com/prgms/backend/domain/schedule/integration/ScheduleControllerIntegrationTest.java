@@ -121,6 +121,45 @@ class ScheduleControllerIntegrationTest {
         url = "/api/meetings/" + meeting.getId() + "/schedule-poll";
     }
 
+    @Test
+    @DisplayName("저장 후 재조회한 일정 엔티티의 연관관계와 후보 컬렉션이 동작한다")
+    void reloadEntityMappingsAndCandidateCollection() {
+        SchedulePoll poll = polls.save(SchedulePoll.create(meeting, deadline));
+        ScheduleCandidate candidate = candidates.save(poll.addCandidate(candidateDate));
+        ScheduleVote vote = votes.save(ScheduleVote.create(candidate, joinedMember, SchedulePreference.PREFER));
+        long pollId = poll.getId();
+        long voteId = vote.getId();
+        assertTrue(pollId > 0);
+        assertTrue(candidate.getId() > 0);
+        assertTrue(voteId > 0);
+
+        flushAndClear();
+        ScheduleVote reloadedVote = votes.findById(voteId).orElseThrow();
+        assertEquals(meeting.getId(), reloadedVote.getScheduleCandidate().getSchedulePoll().getMeeting().getId());
+        assertEquals(member.getId(), reloadedVote.getMeetingMember().getUser().getId());
+        assertEquals(3, reloadedVote.getScore());
+        assertNotNull(reloadedVote.getCreatedAt());
+        assertNotNull(reloadedVote.getUpdatedAt());
+        assertNotNull(reloadedVote.getScheduleCandidate().getCreatedAt());
+
+        SchedulePoll reloaded = polls.findById(pollId).orElseThrow();
+        List<ScheduleCandidate> snapshot = reloaded.getCandidates();
+        assertEquals(1, snapshot.size());
+        ScheduleCandidate added = reloaded.addCandidate(candidateDate.plusDays(1));
+        assertEquals(1, snapshot.size());
+        entityManager.flush();
+        long addedId = added.getId();
+        assertTrue(addedId > 0);
+        flushAndClear();
+
+        SchedulePoll withAdded = polls.findById(pollId).orElseThrow();
+        assertEquals(2, withAdded.getCandidates().size());
+        withAdded.removeCandidate(withAdded.findCandidate(addedId));
+        flushAndClear();
+        assertFalse(candidates.existsById(addedId));
+        assertEquals(1, polls.findById(pollId).orElseThrow().getCandidates().size());
+    }
+
     @Nested
     @DisplayName("SchedulePollController")
     class PollController {
