@@ -46,3 +46,21 @@
 - Windows Testcontainers 연결 대기가 길어져 해당 실행을 중단하고, 실행 프로세스에 `TESTCONTAINERS_HOST_OVERRIDE=127.0.0.1`을 지정한 뒤 정상 연결을 확인했다. 저장소 설정은 변경하지 않았다.
 - 1단계: `ktlintFormat`, `ktlintCheck`, schedule 테스트 **83개 통과**. flush/clear 이후 연관관계·감사 필드·컬렉션 추가·orphanRemoval 회귀 검증을 추가했다.
 - 2단계 호환성: Java Mockito의 `any()`는 Kotlin `Long`에서 null 언박싱 오류를 일으켜 해당 ID matcher를 `anyLong()`으로 변경했다. nullable 조회에 맞춰 테스트 fixture와 마감 동시성 spy 반환값도 변경했다.
+- 2단계 검증: schedule 83개 중 matcher 때문에 실패한 후보 서비스 테스트를 수정하고 해당 클래스 재실행 통과. 이후 3단계에서 같은 전체 schedule 테스트를 재검증했다.
+- 3단계: `ktlintFormat`, `ktlintCheck`, schedule 테스트 **84개 통과**. 마감 시간·후보 날짜·선호도의 명시적 null 요청과 잘못된 enum 검증을 추가했다. Java record 접근자는 Kotlin getter로 변경했다.
+- 4단계: `ktlintFormat`, `ktlintCheck`, schedule 테스트 **84개 통과**. Java 호출자가 사라진 후보 엔티티 팩토리와 후보·투표 응답 팩토리의 `@JvmStatic` 제거 후 Java 운영·테스트 재컴파일도 통과했다.
+- 5단계: 투표판·결과·마감 서비스, 컨트롤러, 스케줄러 전환. 투표판 응답 팩토리의 불필요한 `@JvmStatic`을 제거했다. `SchedulePoll.create`와 `ScheduleVote.create`는 기존 Java 테스트가 호출하므로 유지한다.
+- 최종 검증: `ktlintFormat` 후 필터 없는 `ktlintCheck test` **전체 427개 통과**(schedule 84개 포함, 실패·오류·스킵 0개). Java·Kotlin 혼용 컴파일, 기본 애플리케이션 컨텍스트와 content·meeting 등 타 도메인 테스트도 통과했다. 로컬 보고서는 `build/reports/tests/test/index.html`에서 확인할 수 있다.
+
+### 검증 재실행
+
+Java 25와 Docker가 필요하다. Windows에서 Testcontainers 연결 대기가 길면 현재 PowerShell 프로세스에 아래 설정을 적용한다.
+
+```powershell
+$env:TESTCONTAINERS_HOST_OVERRIDE = '127.0.0.1'
+docker compose up -d mysql
+.\gradlew.bat ktlintFormat
+.\gradlew.bat ktlintCheck test
+```
+
+브랜치별 변경만 보려면 표의 직전 브랜치를 base로 비교한다. 예를 들어 DTO 리뷰는 `git diff refactor/kotlin-schedule-repository-event...refactor/kotlin-schedule-dto`로 확인한다.
