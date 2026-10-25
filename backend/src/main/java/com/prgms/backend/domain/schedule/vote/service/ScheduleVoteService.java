@@ -54,7 +54,7 @@ public class ScheduleVoteService {
         ScheduleVote savedVote = saveOrUpdateVote(
                 candidate,
                 meetingMember,
-                request.preference()
+                request.getPreference()
         );
 
         return ScheduleVoteResponse.Saved.from(savedVote);

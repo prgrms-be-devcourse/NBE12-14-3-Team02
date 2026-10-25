@@ -78,24 +78,24 @@ class ScheduleResultServiceTest {
 
         var result = service.getResults(10L, 1L);
 
-        assertEquals(List.of(40L, 41L, 42L), result.candidateRanks().stream()
-                .map(rank -> rank.candidateId()).toList());
-        assertEquals(List.of(1, 1, 3), result.candidateRanks().stream()
-                .map(rank -> rank.rank()).toList());
-        assertEquals(List.of(3, 3, 0), result.candidateRanks().stream()
-                .map(rank -> rank.totalScore()).toList());
-        assertEquals(2, result.candidateRanks().getFirst().responseCount());
-        assertEquals(1, result.candidateRanks().getFirst().nonResponseCount());
-        assertEquals(1, result.candidateRanks().getFirst().preferenceCounts().impossible());
-        assertEquals(0, result.candidateRanks().getLast().responseCount());
-        assertEquals(3, result.candidateRanks().getLast().nonResponseCount());
+        assertEquals(List.of(40L, 41L, 42L), result.getCandidateRanks().stream()
+                .map(rank -> rank.getCandidateId()).toList());
+        assertEquals(List.of(1, 1, 3), result.getCandidateRanks().stream()
+                .map(rank -> rank.getRank()).toList());
+        assertEquals(List.of(3, 3, 0), result.getCandidateRanks().stream()
+                .map(rank -> rank.getTotalScore()).toList());
+        assertEquals(2, result.getCandidateRanks().getFirst().getResponseCount());
+        assertEquals(1, result.getCandidateRanks().getFirst().getNonResponseCount());
+        assertEquals(1, result.getCandidateRanks().getFirst().getPreferenceCounts().getImpossible());
+        assertEquals(0, result.getCandidateRanks().getLast().getResponseCount());
+        assertEquals(3, result.getCandidateRanks().getLast().getNonResponseCount());
 
-        assertEquals(3, result.participantResponses().size());
+        assertEquals(3, result.getParticipantResponses().size());
         assertEquals(SchedulePreference.PREFER,
-                result.participantResponses().getFirst().answers().getFirst().preference());
+                result.getParticipantResponses().getFirst().getAnswers().getFirst().getPreference());
         assertEquals(SchedulePreference.IMPOSSIBLE,
-                result.participantResponses().get(1).answers().getFirst().preference());
-        assertNull(result.participantResponses().getLast().answers().getFirst().preference());
+                result.getParticipantResponses().get(1).getAnswers().getFirst().getPreference());
+        assertNull(result.getParticipantResponses().getLast().getAnswers().getFirst().getPreference());
     }
 
     @Test

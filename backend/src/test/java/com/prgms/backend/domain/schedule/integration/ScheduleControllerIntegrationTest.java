@@ -228,6 +228,9 @@ class ScheduleControllerIntegrationTest {
             expectValidationError(perform(request(HttpMethod.valueOf(method), url), host, Map.of()),
                     "deadline", "마감 시간은 필수입니다.");
             expectValidationError(perform(request(HttpMethod.valueOf(method), url), host,
+                    java.util.Collections.singletonMap("deadline", null)),
+                    "deadline", "마감 시간은 필수입니다.");
+            expectValidationError(perform(request(HttpMethod.valueOf(method), url), host,
                     Map.of("deadline", LocalDateTime.now().minusDays(1))),
                     "deadline", "마감 시간은 현재보다 이후여야 합니다.");
             assertEquals(deadline, java.util.Objects.requireNonNull(polls.findByMeetingId(meeting.getId())).getDeadline());
@@ -433,6 +436,9 @@ class ScheduleControllerIntegrationTest {
             expectValidationError(perform(request(HttpMethod.valueOf(method), target), host, Map.of()),
                     "candidateDate", "날짜는 필수입니다");
             expectValidationError(perform(request(HttpMethod.valueOf(method), target), host,
+                    java.util.Collections.singletonMap("candidateDate", null)),
+                    "candidateDate", "날짜는 필수입니다");
+            expectValidationError(perform(request(HttpMethod.valueOf(method), target), host,
                     Map.of("candidateDate", LocalDate.now())),
                     "candidateDate", "후보 날짜는 오늘보다 이후여야 합니다.");
             expectValidationError(perform(request(HttpMethod.valueOf(method), target), host,
@@ -551,6 +557,19 @@ class ScheduleControllerIntegrationTest {
         void missingPreference() throws Exception {
             givenPoll(deadline);
             expectValidationError(perform(put(voteUrl), member, Map.of()), "preference", "선호도는 필수입니다.");
+            expectValidationError(perform(put(voteUrl), member,
+                    java.util.Collections.singletonMap("preference", null)), "preference", "선호도는 필수입니다.");
+            assertFalse(votes.existsByScheduleCandidateId(candidate.getId()));
+        }
+
+        @Test
+        @DisplayName("정의되지 않은 선호도는 400으로 거절하고 저장하지 않는다")
+        void invalidPreference() throws Exception {
+            givenPoll(deadline);
+            perform(put(voteUrl), member, Map.of("preference", "UNKNOWN"))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.success").value(false))
+                    .andExpect(jsonPath("$.code").value(400));
             assertFalse(votes.existsByScheduleCandidateId(candidate.getId()));
         }
 

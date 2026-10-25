@@ -56,8 +56,8 @@ class ScheduleCandidateServiceTest {
 
         var response = service.createCandidate(10L, 1L, new ScheduleCandidateRequest.Create(firstDate));
 
-        assertEquals(40L, response.id());
-        assertEquals(firstDate, response.candidateDate());
+        assertEquals(40L, response.getId());
+        assertEquals(firstDate, response.getCandidateDate());
         assertEquals(1, poll.getCandidates().size());
         assertEquals(poll, poll.getCandidates().getFirst().getSchedulePoll());
     }
@@ -81,7 +81,7 @@ class ScheduleCandidateServiceTest {
         LocalDate changed = firstDate.plusDays(1);
 
         var response = service.update(10L, 40L, 1L, new ScheduleCandidateRequest.Update(changed));
-        assertEquals(changed, response.candidateDate());
+        assertEquals(changed, response.getCandidateDate());
         assertEquals(changed, candidate.getCandidateDate());
 
         service.delete(10L, 40L, 1L);

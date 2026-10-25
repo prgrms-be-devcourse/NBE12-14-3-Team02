@@ -40,7 +40,7 @@ public class SchedulePollService {
         validateActiveMeeting(meeting);
         validateNoExistingPoll(meetingId);
 
-        SchedulePoll schedulePoll = SchedulePoll.create(meeting,request.deadline());
+        SchedulePoll schedulePoll = SchedulePoll.create(meeting,request.getDeadline());
         SchedulePoll savedPoll = schedulePollRepository.save(schedulePoll);
 
        return SchedulePollResponse.Created.from(savedPoll);
@@ -71,7 +71,7 @@ public class SchedulePollService {
 
         SchedulePoll schedulePoll = getPollWithExclusiveLock(meetingId);
 
-        schedulePoll.updateDeadline(request.deadline(),LocalDateTime.now());
+        schedulePoll.updateDeadline(request.getDeadline(),LocalDateTime.now());
 
         return SchedulePollResponse.DeadlineUpdate.from(
                 schedulePoll

@@ -159,7 +159,7 @@ class ScheduleConcurrencyIntegrationTest {
     void candidateChangeWaitsForVote(String operation) throws Exception {
         LocalDate original = LocalDate.now().plusDays(1);
         Long candidateId = candidateService.createCandidate(meetingId, hostId,
-                new ScheduleCandidateRequest.Create(original)).id();
+                new ScheduleCandidateRequest.Create(original)).getId();
 
         CountDownLatch voteInserted = new CountDownLatch(1);
         CountDownLatch releaseVote = new CountDownLatch(1);
@@ -199,7 +199,7 @@ class ScheduleConcurrencyIntegrationTest {
     @DisplayName("같은 회원의 첫 투표 두 건은 하나의 행으로 저장된다")
     void sameMemberFirstVoteIsSerialized() throws Exception {
         Long candidateId = candidateService.createCandidate(meetingId, hostId,
-                new ScheduleCandidateRequest.Create(LocalDate.now().plusDays(1))).id();
+                new ScheduleCandidateRequest.Create(LocalDate.now().plusDays(1))).getId();
 
         CountDownLatch firstInserted = new CountDownLatch(1);
         CountDownLatch releaseFirst = new CountDownLatch(1);

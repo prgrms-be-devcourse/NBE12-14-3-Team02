@@ -41,7 +41,7 @@ public class ScheduleCandidateService {
 
         SchedulePoll schedulePoll = getOpenPollWithExclusiveLock(meetingId);
 
-        LocalDate candidateDate = request.candidateDate();
+        LocalDate candidateDate = request.getCandidateDate();
         validateUniqueCandidateDate(schedulePoll,candidateDate);
         ScheduleCandidate candidate =
                 schedulePoll.addCandidate(candidateDate);
@@ -67,7 +67,7 @@ public class ScheduleCandidateService {
                 schedulePoll.findCandidate(candidateId);
         validateCandidateHasNoVotes(candidateId);
 
-        LocalDate candidateDate = request.candidateDate();
+        LocalDate candidateDate = request.getCandidateDate();
         validateUniqueCandidateDateForUpdate(schedulePoll,candidateId,candidateDate);
         candidate.updateCandidateDate(candidateDate);
 
