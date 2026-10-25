@@ -10,7 +10,6 @@ class ScheduleVoteResponse private constructor() {
         val preference: SchedulePreference,
     ) {
         companion object {
-            @JvmStatic
             fun from(vote: ScheduleVote): Saved =
                 Saved(vote.scheduleCandidate.id, vote.meetingMember.id, vote.preference)
         }

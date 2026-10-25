@@ -47,7 +47,6 @@ class ScheduleCandidate private constructor(
     }
 
     companion object {
-        @JvmStatic
         fun create(
             schedulePoll: SchedulePoll,
             candidateDate: LocalDate,
