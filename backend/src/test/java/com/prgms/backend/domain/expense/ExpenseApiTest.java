@@ -2,7 +2,7 @@ package com.prgms.backend.domain.expense;
 
 import com.prgms.backend.domain.expense.controller.ExpenseController;
 import com.prgms.backend.domain.expense.dto.*;
-import com.prgms.backend.domain.expense.exception.ExpenseRequestException;
+import com.prgms.backend.global.exception.custom.expense.ExpenseRequestException;
 import com.prgms.backend.domain.expense.service.ExpenseService;
 import com.prgms.backend.domain.settlement.controller.SettlementController;
 import com.prgms.backend.domain.settlement.service.SettlementService;

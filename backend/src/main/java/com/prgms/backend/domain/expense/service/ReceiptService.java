@@ -1,7 +1,7 @@
 package com.prgms.backend.domain.expense.service;
 
 import com.prgms.backend.domain.expense.entity.Expense;
-import com.prgms.backend.domain.expense.exception.ExpenseRequestException;
+import com.prgms.backend.global.exception.custom.expense.ExpenseRequestException;
 import com.prgms.backend.domain.expense.repository.ExpenseRepository;
 import com.prgms.backend.domain.settlement.integration.MeetingAccessPort;
 import com.prgms.backend.domain.settlement.repository.SettlementRepository;

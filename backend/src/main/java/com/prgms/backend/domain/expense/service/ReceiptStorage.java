@@ -1,6 +1,6 @@
 package com.prgms.backend.domain.expense.service;
 
-import com.prgms.backend.domain.expense.exception.ExpenseRequestException;
+import com.prgms.backend.global.exception.custom.expense.ExpenseRequestException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
