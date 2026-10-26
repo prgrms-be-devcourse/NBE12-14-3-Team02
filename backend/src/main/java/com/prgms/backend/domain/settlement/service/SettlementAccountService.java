@@ -42,8 +42,8 @@ public class SettlementAccountService {
             throw new SettlementRequestException(400, "은행명, 계좌번호와 예금주를 확인해주세요.");
         }
         var account = accounts.findByMeetingIdAndMemberId(meetingId, context.memberId())
-                .orElseGet(() -> new SettlementAccount(meetingId, context.memberId(), request.bankName(), request.accountNumber(), request.accountHolder()));
-        account.update(request.bankName(), request.accountNumber(), request.accountHolder());
+                .orElseGet(() -> new SettlementAccount(meetingId, context.memberId(), request.getBankName(), request.getAccountNumber(), request.getAccountHolder()));
+        account.update(request.getBankName(), request.getAccountNumber(), request.getAccountHolder());
         var saved = accounts.save(account);
         if (closed) settlement.registerMissingAccount(saved);
         return AccountResponse.from(saved);

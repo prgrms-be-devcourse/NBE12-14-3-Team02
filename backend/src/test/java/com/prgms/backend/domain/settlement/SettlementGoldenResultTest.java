@@ -140,16 +140,16 @@ class SettlementGoldenResultTest {
 
     // settlementId·closedAt은 저장 여부·실행 시각에 따라 달라지므로 비교하지 않는다.
     private String view(SettlementResponse response) {
-        return "status:" + response.status().name() + " meeting:" + response.meetingId()
-            + " closedBy:" + response.closedByMemberId()
-            + " balances:" + response.balances().stream()
+        return "status:" + response.getStatus().name() + " meeting:" + response.getMeetingId()
+            + " closedBy:" + response.getClosedByMemberId()
+            + " balances:" + response.getBalances().stream()
                 .map(b -> b.memberId() + ":" + b.paidAmount() + "/" + b.shareAmount()).toList()
-            + " transfers:" + response.transfers().stream()
+            + " transfers:" + response.getTransfers().stream()
                 .map(t -> t.senderId() + "->" + t.recipientId() + ":" + t.amount()).toList()
-            + " accounts:" + response.accounts().stream()
-                .map(a -> a.memberId() + ":" + escape(a.bankName()) + "|" + a.accountNumber()
-                    + "|" + escape(a.accountHolder())).toList()
-            + " missing:" + response.missingAccountMemberIds();
+            + " accounts:" + response.getAccounts().stream()
+                .map(a -> a.getMemberId() + ":" + escape(a.getBankName()) + "|" + a.getAccountNumber()
+                    + "|" + escape(a.getAccountHolder())).toList()
+            + " missing:" + response.getMissingAccountMemberIds();
     }
 
     // 은행명·예금주는 공백 처리(strip) 결과까지 비교하도록 일반 공백·탭·NBSP가 섞인 값으로 만든다.

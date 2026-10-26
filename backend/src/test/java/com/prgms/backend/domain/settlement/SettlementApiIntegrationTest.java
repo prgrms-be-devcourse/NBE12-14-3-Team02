@@ -219,6 +219,21 @@ class SettlementApiIntegrationTest extends MySqlContainerSupport {
         assertEquals(0, count("SELECT COUNT(*) FROM settlement_accounts WHERE meeting_id = ?", meetingId));
     }
 
+    @Test
+    @DisplayName("계좌 필드가 없거나 null이면 역직렬화가 아닌 요청 검증에서 공백 입력과 같은 400 응답을 반환한다")
+    void rejectsMissingAccountFields() throws Exception {
+        String blank = accountError("""
+            {"bankName":" ","accountNumber":"123-456","accountHolder":"모임장"}
+            """);
+        assertEquals(blank, accountError("""
+            {"accountNumber":"123-456","accountHolder":"모임장"}
+            """));
+        assertEquals(blank, accountError("""
+            {"bankName":null,"accountNumber":"123-456","accountHolder":"모임장"}
+            """));
+        assertEquals(0, count("SELECT COUNT(*) FROM settlement_accounts WHERE meeting_id = ?", meetingId));
+    }
+
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     @DisplayName("총금액 또는 개인 부담액이 소수이면 400을 반환하고 지출을 저장하지 않는다")
@@ -503,6 +518,13 @@ class SettlementApiIntegrationTest extends MySqlContainerSupport {
 
     private int count(String sql, Object... args) {
         return jdbc.queryForObject(sql, Integer.class, args);
+    }
+
+    private String accountError(String body) throws Exception {
+        ResultActions result = mvc.perform(put(url + "/account").header(AUTHORIZATION, bearer(host))
+            .contentType(APPLICATION_JSON).content(body));
+        assertError(result, 400);
+        return JsonPath.read(result.andReturn().getResponse().getContentAsString(), "$.message");
     }
 
     private void assertError(ResultActions result, int code) throws Exception {

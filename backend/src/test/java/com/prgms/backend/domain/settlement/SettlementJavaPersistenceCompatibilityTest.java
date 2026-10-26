@@ -114,13 +114,13 @@ class SettlementJavaPersistenceCompatibilityTest extends MySqlContainerSupport {
         assertEquals("001-234", snapshot.getAccountNumber());
         assertEquals("\u00a0예금주", snapshot.getAccountHolder());
         var response = SettlementResponse.forMember(closed, 41, false);
-        assertEquals(BALANCES, response.balances());
-        assertEquals(TRANSFERS, response.transfers());
-        assertEquals("001-234", response.accounts().getFirst().accountNumber());
-        assertTrue(response.missingAccountMemberIds().isEmpty());
+        assertEquals(BALANCES, response.getBalances());
+        assertEquals(TRANSFERS, response.getTransfers());
+        assertEquals("001-234", response.getAccounts().getFirst().getAccountNumber());
+        assertTrue(response.getMissingAccountMemberIds().isEmpty());
         var mine = SettlementResponse.forMember(closed, 41, true);
-        assertEquals(List.of(BALANCES.get(2)), mine.balances());
-        assertEquals(List.of(TRANSFERS.get(1)), mine.transfers());
+        assertEquals(List.of(BALANCES.get(2)), mine.getBalances());
+        assertEquals(List.of(TRANSFERS.get(1)), mine.getTransfers());
 
         Settlement open = settlements.findByMeetingId(890002).orElseThrow();
         assertEquals("OPEN", open.getStatus().name());
