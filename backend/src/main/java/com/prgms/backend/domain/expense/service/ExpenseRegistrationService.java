@@ -40,7 +40,7 @@ public class ExpenseRegistrationService {
         }
         String key = requestKey.toLowerCase(Locale.ROOT);
         String fingerprint = fingerprint(request);
-        var previous = registrations.findByMeetingIdAndMemberIdAndRequestKey(meetingId, context.memberId(), key);
+        var previous = registrations.findByMeetingIdAndMemberIdAndRequestKey(meetingId, context.getMemberId(), key);
         if (previous.isPresent()) {
             var registration = previous.get();
             if (!registration.getFingerprint().equals(fingerprint)) {
@@ -52,7 +52,7 @@ public class ExpenseRegistrationService {
         }
         // 지출 서비스와 동일한 트랜잭션·모임 잠금 안에서 요청 번호까지 함께 저장합니다.
         ExpenseResponse saved = expenses.create(meetingId, principal, request);
-        registrations.save(new ExpenseRegistration(meetingId, context.memberId(), key, fingerprint, saved.getId()));
+        registrations.save(new ExpenseRegistration(meetingId, context.getMemberId(), key, fingerprint, saved.getId()));
         return saved;
     }
 
