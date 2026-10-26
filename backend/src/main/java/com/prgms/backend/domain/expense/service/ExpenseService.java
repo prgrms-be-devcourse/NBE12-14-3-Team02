@@ -38,7 +38,7 @@ public class ExpenseService {
                 .map(settlement -> settlement.getStatus() == SettlementStatus.CLOSED).orElse(false);
         var expenses = expenseRepository.findByMeetingIdOrderByIdAsc(meetingId).stream()
                 .map(ExpenseResponse::from).toList();
-        return new ExpenseListResponse(context.memberId(), context.leader(), context.meetingOpen() && !closed, expenses);
+        return new ExpenseListResponse(context.getMemberId(), context.getLeader(), context.getMeetingOpen() && !closed, expenses);
     }
 
     @Transactional(readOnly = true)
@@ -53,7 +53,7 @@ public class ExpenseService {
         var context = meetingAccess.requireMember(meetingId, principal);
         checkRegistrationAllowed(meetingId, context);
         Expense expense = findExpense(meetingId, expenseId);
-        checkOwner(expense, context.memberId());
+        checkOwner(expense, context.getMemberId());
         validateRequest(request);
         var result = splitCalculator.calculateResult(request);
         // 탈퇴자는 수정 불가
@@ -68,7 +68,7 @@ public class ExpenseService {
         var context = meetingAccess.requireMember(meetingId, principal);
         checkRegistrationAllowed(meetingId, context);
         Expense expense = findExpense(meetingId, expenseId);
-        checkOwner(expense, context.memberId());
+        checkOwner(expense, context.getMemberId());
         expenseRepository.delete(expense);
         receiptStorage.deleteAfterCommit(expense.getReceiptKey());
     }
@@ -101,7 +101,7 @@ public class ExpenseService {
 
         Expense expense = Expense.register(
                 meetingId,
-                context.memberId(),
+                context.getMemberId(),
                 request.getTitle(),
                 request.getAmount().longValueExact(),
                 request.getMemo(),
@@ -115,7 +115,7 @@ public class ExpenseService {
 
     private void checkRegistrationAllowed(long meetingId, MeetingAccessPort.Context context) {
         // 종료된 모임에 지출 등록 불가
-        if (!context.meetingOpen()) {
+        if (!context.getMeetingOpen()) {
             throw new ExpenseRequestException(409, "종료된 모임의 지출은 변경할 수 없습니다.");
         }
 

@@ -40,10 +40,10 @@ public class ReceiptService {
     }
 
     private Expense checkEditable(long meetingId, long expenseId, MeetingAccessPort.Context context) {
-        if (!context.meetingOpen()) throw new ExpenseRequestException(409, "종료된 모임의 영수증은 변경할 수 없습니다.");
+        if (!context.getMeetingOpen()) throw new ExpenseRequestException(409, "종료된 모임의 영수증은 변경할 수 없습니다.");
         java.util.Optional.ofNullable(settlements.findByMeetingId(meetingId)).ifPresent(settlement -> settlement.checkOpen());
         Expense expense = find(meetingId, expenseId);
-        if (expense.getPayerMemberId() != context.memberId()) throw new ExpenseRequestException(403, "본인 지출의 영수증만 변경할 수 있습니다.");
+        if (expense.getPayerMemberId() != context.getMemberId()) throw new ExpenseRequestException(403, "본인 지출의 영수증만 변경할 수 있습니다.");
         return expense;
     }
 
