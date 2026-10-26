@@ -29,7 +29,7 @@ class SettlementPersistenceTest extends MySqlContainerSupport {
     @Autowired private SettlementAccountRepository accounts;
     @Autowired private EntityManager entityManager;
 
-    @Test @DisplayName("version이 null인 정산은 신규 저장되고, 재조회 후 확정·계좌 보충 시 버전과 컬렉션이 유지")
+    @Test @DisplayName("version이 null인 정산은 신규 저장되고, 재조회 후 확정 시 버전과 컬렉션이 유지")
     void saveReloadAndUpdate() {
         Settlement settlement = new Settlement(MEETING_ID);
         assertEquals(0L, settlement.getId());
@@ -74,6 +74,54 @@ class SettlementPersistenceTest extends MySqlContainerSupport {
         // 외부에 노출한 목록을 바꿔도 엔티티 상태는 바뀌지 않는다
         assertThrows(UnsupportedOperationException.class, () -> closed.getAccounts().clear());
         assertEquals(1, closed.getAccounts().size());
+    }
+
+    @Test @DisplayName("기존 CLOSED 정산의 누락 계좌를 보충하면 버전만 증가하고 확정 결과와 기존 스냅샷은 유지")
+    void registerMissingAccountAfterReload() {
+        SettlementAccount existing = accounts.saveAndFlush(
+            new SettlementAccount(MEETING_ID, 1, "기존 은행", "111", "기존 수취인"));
+        Settlement settlement = new Settlement(MEETING_ID);
+        settlement.saveResult(
+            List.of(new SettlementBalance(1, 300, 100), new SettlementBalance(2, 300, 100),
+                new SettlementBalance(3, 0, 400)),
+            List.of(new SettlementTransfer(3, 1, 200), new SettlementTransfer(3, 2, 200)));
+        settlement.saveAccounts(List.of(new SettlementAccountSnapshot(existing)));
+        settlement.close(1);
+        long id = settlements.saveAndFlush(settlement).getId();
+        entityManager.clear();
+
+        Settlement closed = settlements.findById(id).orElseThrow();
+        var closedAt = closed.getClosedAt();
+        long version = closed.getVersion();
+        assertTrue(closed.canRegisterMissingAccount(2));
+        SettlementAccount missing = accounts.saveAndFlush(
+            new SettlementAccount(MEETING_ID, 2, "추가 은행", "222", "추가 수취인"));
+        closed.registerMissingAccount(missing);
+        entityManager.flush();
+        entityManager.clear();
+
+        Settlement reloaded = settlements.findById(id).orElseThrow();
+        assertEquals(version + 1, reloaded.getVersion());
+        assertEquals(SettlementStatus.CLOSED, reloaded.getStatus());
+        assertEquals(1L, reloaded.getClosedByMemberId());
+        assertEquals(closedAt, reloaded.getClosedAt());
+        assertEquals(List.of(List.of(1L, 300L, 100L), List.of(2L, 300L, 100L), List.of(3L, 0L, 400L)),
+            reloaded.getBalances().stream().map(b -> List.of(b.getMemberId(), b.getPaidAmount(), b.getShareAmount())).toList());
+        assertEquals(List.of(List.of(3L, 1L, 200L), List.of(3L, 2L, 200L)),
+            reloaded.getTransfers().stream().map(t -> List.of(t.getSenderId(), t.getRecipientId(), t.getAmount())).toList());
+        assertEquals(List.of(1L, 2L), reloaded.getAccounts().stream().map(SettlementAccountSnapshot::getMemberId).toList());
+        assertEquals(List.of("기존 은행/111/기존 수취인", "추가 은행/222/추가 수취인"),
+            reloaded.getAccounts().stream()
+                .map(a -> a.getBankName() + "/" + a.getAccountNumber() + "/" + a.getAccountHolder()).toList());
+        assertFalse(reloaded.canRegisterMissingAccount(2));
+        var error = assertThrows(com.prgms.backend.global.exception.BusinessException.class,
+            () -> reloaded.registerMissingAccount(missing));
+        assertEquals(409, error.getCode());
+        entityManager.flush();
+        entityManager.clear();
+        Settlement unchanged = settlements.findById(id).orElseThrow();
+        assertEquals(version + 1, unchanged.getVersion());
+        assertEquals(2, unchanged.getAccounts().size());
     }
 
     @Test @DisplayName("계좌는 기존 strip 기준으로 공백을 제거하고, 수정 실패 시 기존 값을 유지")

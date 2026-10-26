@@ -5,6 +5,12 @@ import com.prgms.backend.domain.meeting.entity.Meeting;
 import com.prgms.backend.domain.meeting.entity.MeetingMember;
 import com.prgms.backend.domain.meeting.repository.MeetingMemberRepository;
 import com.prgms.backend.domain.meeting.repository.MeetingRepository;
+import com.prgms.backend.domain.settlement.entity.Settlement;
+import com.prgms.backend.domain.settlement.entity.SettlementAccountSnapshot;
+import com.prgms.backend.domain.settlement.entity.SettlementBalance;
+import com.prgms.backend.domain.settlement.entity.SettlementTransfer;
+import com.prgms.backend.domain.settlement.repository.SettlementAccountRepository;
+import com.prgms.backend.domain.settlement.repository.SettlementRepository;
 import com.prgms.backend.domain.user.entity.User;
 import com.prgms.backend.domain.user.repository.UserRepository;
 import com.prgms.backend.security.JwtTokenProvider;
@@ -15,10 +21,12 @@ import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -26,9 +34,11 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
@@ -52,6 +62,9 @@ class SettlementApiIntegrationTest extends MySqlContainerSupport {
     @Autowired private MeetingRepository meetings;
     @Autowired private MeetingMemberRepository members;
     @Autowired private JdbcTemplate jdbc;
+    @Autowired private TransactionTemplate transaction;
+    @Autowired private SettlementRepository settlements;
+    @Autowired private SettlementAccountRepository accounts;
 
     private User host;
     private User second;
@@ -433,6 +446,238 @@ class SettlementApiIntegrationTest extends MySqlContainerSupport {
         assertTrue(List.of(hostMemberId, secondMemberId, thirdMemberId).contains(remainderMemberId));
         assertEquals(3400L, jdbc.queryForObject("SELECT share_amount FROM expense_shares WHERE expense_id = ? AND member_id = ?",
             Long.class, expenseId, remainderMemberId));
+    }
+
+    @Test
+    @DisplayName("동시 확정 요청은 모임 잠금을 기다린 뒤 한 건만 성공하고 결과·알림을 한 번만 저장한다")
+    void concurrentConfirmation() throws Exception {
+        prepareSettlementRace();
+
+        runWithFirstTransactionHeld(
+            () -> confirmRequest().andExpect(status().isOk()),
+            () -> assertError(confirmRequest(), 409));
+
+        assertConfirmedAmounts(300, 100, 200);
+    }
+
+    @ParameterizedTest(name = "{0}, 확정 선행={1}")
+    @CsvSource({"CREATE,true", "CREATE,false", "UPDATE,true", "UPDATE,false", "DELETE,true", "DELETE,false"})
+    @DisplayName("지출 변경과 확정은 모임 잠금으로 직렬화하고, 먼저 커밋한 상태를 반영한다")
+    void expenseChangesRaceWithConfirmation(String operation, boolean confirmFirst) throws Exception {
+        prepareSettlementRace();
+        long expenseId = onlyExpenseId();
+        CheckedRequest confirm = () -> confirmRequest().andExpect(status().isOk());
+        CheckedRequest change = () -> {
+            ResultActions result = changeExpense(operation, expenseId);
+            if (confirmFirst) {
+                assertError(result, 409);
+            } else {
+                result.andExpect(operation.equals("CREATE") ? status().isCreated()
+                    : operation.equals("DELETE") ? status().isNoContent() : status().isOk());
+            }
+        };
+
+        runWithFirstTransactionHeld(confirmFirst ? confirm : change, confirmFirst ? change : confirm);
+
+        if (confirmFirst) {
+            assertConfirmedAmounts(300, 100, 200);
+            assertEquals(1, count("SELECT COUNT(*) FROM expenses WHERE meeting_id = ?", meetingId));
+        } else {
+            switch (operation) {
+                case "CREATE" -> {
+                    assertConfirmedAmounts(900, 100, 800);
+                    assertEquals(2, count("SELECT COUNT(*) FROM expenses WHERE meeting_id = ?", meetingId));
+                }
+                case "UPDATE" -> assertConfirmedAmounts(500, 0, 500);
+                case "DELETE" -> {
+                    assertConfirmedAmounts(0, 0, 0);
+                    assertEquals(0, count("SELECT COUNT(*) FROM expenses WHERE meeting_id = ?", meetingId));
+                }
+                default -> throw new IllegalArgumentException(operation);
+            }
+        }
+    }
+
+    @ParameterizedTest(name = "확정 선행={0}")
+    @ValueSource(booleans = {true, false})
+    @DisplayName("계좌 변경이 먼저면 변경 계좌를 확정하고, 확정이 먼저면 계좌 변경을 거절한다")
+    void accountChangeRacesWithConfirmation(boolean confirmFirst) throws Exception {
+        prepareSettlementRace();
+        CheckedRequest confirm = () -> confirmRequest().andExpect(status().isOk());
+        CheckedRequest change = () -> {
+            ResultActions result = saveAccount(host, "999");
+            if (confirmFirst) assertError(result, 409);
+            else result.andExpect(status().isOk());
+        };
+
+        runWithFirstTransactionHeld(confirmFirst ? confirm : change, confirmFirst ? change : confirm);
+
+        String expected = confirmFirst ? "123-456" : "999";
+        assertEquals(expected, jdbc.queryForObject(
+            "SELECT account_number FROM settlement_accounts WHERE meeting_id = ? AND member_id = ?",
+            String.class, meetingId, hostMemberId));
+        long id = settlementId();
+        assertEquals(List.of(expected), jdbc.queryForList(
+            "SELECT account_number FROM settlement_account_snapshots WHERE settlement_id = ?", String.class, id));
+        mvc.perform(get(url).header(AUTHORIZATION, bearer(second)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data.accounts[0].accountNumber").value(expected));
+        assertConfirmedAmounts(300, 100, 200);
+    }
+
+    @Test
+    @DisplayName("기존 CLOSED 정산의 미등록 수취인만 계좌를 한 번 보충하며 기존 결과와 스냅샷은 변경하지 않는다")
+    void supplementsMissingRecipientAccountOnce() throws Exception {
+        saveAccount(host, "123-456").andExpect(status().isOk());
+        // 신규 확정 API는 계좌 누락을 거절하므로, 복구 대상인 기존 CLOSED 데이터를 직접 준비한다.
+        transaction.executeWithoutResult(status -> {
+            Settlement legacy = new Settlement(meetingId);
+            legacy.saveResult(
+                List.of(new SettlementBalance(hostMemberId, 300, 100), new SettlementBalance(secondMemberId, 300, 100),
+                    new SettlementBalance(thirdMemberId, 0, 400)),
+                List.of(new SettlementTransfer(thirdMemberId, hostMemberId, 200),
+                    new SettlementTransfer(thirdMemberId, secondMemberId, 200)));
+            legacy.saveAccounts(List.of(new SettlementAccountSnapshot(
+                java.util.Objects.requireNonNull(accounts.findByMeetingIdAndMemberId(meetingId, hostMemberId)))));
+            legacy.close(hostMemberId);
+            settlements.saveAndFlush(legacy);
+        });
+        long id = settlementId();
+        Map<String, Object> closed = jdbc.queryForMap(
+            "SELECT status, closed_by_member_id, closed_at FROM settlements WHERE id = ?", id);
+        long version = jdbc.queryForObject("SELECT version FROM settlements WHERE id = ?", Long.class, id);
+        var balances = jdbc.queryForList("SELECT * FROM settlement_balances WHERE settlement_id = ? ORDER BY balance_order", id);
+        var transfers = jdbc.queryForList("SELECT * FROM settlement_transfers WHERE settlement_id = ? ORDER BY transfer_order", id);
+        var existingSnapshot = jdbc.queryForMap("SELECT * FROM settlement_account_snapshots WHERE settlement_id = ?", id);
+
+        mvc.perform(get(url).header(AUTHORIZATION, bearer(third)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data.missingAccountMemberIds[0]").value(secondMemberId));
+        saveAccount(second, "222").andExpect(status().isOk());
+
+        assertEquals(version + 1, jdbc.queryForObject("SELECT version FROM settlements WHERE id = ?", Long.class, id));
+        assertEquals(existingSnapshot, jdbc.queryForMap(
+            "SELECT * FROM settlement_account_snapshots WHERE settlement_id = ? AND member_id = ?", id, hostMemberId));
+        assertEquals("222", jdbc.queryForObject(
+            "SELECT account_number FROM settlement_accounts WHERE meeting_id = ? AND member_id = ?",
+            String.class, meetingId, secondMemberId));
+        mvc.perform(get(url).header(AUTHORIZATION, bearer(third)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data.missingAccountMemberIds").isEmpty())
+            .andExpect(jsonPath("$.data.accounts.length()").value(2))
+            .andExpect(jsonPath("$.data.accounts[1].memberId").value(secondMemberId))
+            .andExpect(jsonPath("$.data.accounts[1].accountNumber").value("222"));
+
+        var snapshots = jdbc.queryForList(
+            "SELECT * FROM settlement_account_snapshots WHERE settlement_id = ? ORDER BY account_order", id);
+        assertError(saveAccount(second, "333"), 409); // 보충한 계좌의 재등록
+        assertError(saveAccount(host, "444"), 409);   // 기존 스냅샷 변경
+        assertError(saveAccount(third, "555"), 409);  // 수취인이 아닌 회원
+
+        assertEquals(closed, jdbc.queryForMap("SELECT status, closed_by_member_id, closed_at FROM settlements WHERE id = ?", id));
+        assertEquals(version + 1, jdbc.queryForObject("SELECT version FROM settlements WHERE id = ?", Long.class, id));
+        assertEquals(balances, jdbc.queryForList("SELECT * FROM settlement_balances WHERE settlement_id = ? ORDER BY balance_order", id));
+        assertEquals(transfers, jdbc.queryForList("SELECT * FROM settlement_transfers WHERE settlement_id = ? ORDER BY transfer_order", id));
+        assertEquals(snapshots, jdbc.queryForList(
+            "SELECT * FROM settlement_account_snapshots WHERE settlement_id = ? ORDER BY account_order", id));
+        assertEquals(List.of("123-456", "222"), jdbc.queryForList(
+            "SELECT account_number FROM settlement_accounts WHERE meeting_id = ? ORDER BY member_id", String.class, meetingId));
+        assertEquals(0, count("SELECT COUNT(*) FROM notifications WHERE meeting_id = ? AND type = 'SETTLEMENT_CLOSED'", meetingId));
+    }
+
+    private void prepareSettlementRace() throws Exception {
+        createExpense(host, "원본 지출", 300, Map.of(hostMemberId, 100L, secondMemberId, 200L));
+        saveAccount(host, "123-456").andExpect(status().isOk());
+    }
+
+    private ResultActions confirmRequest() throws Exception {
+        return mvc.perform(post(url + "/confirm").header(AUTHORIZATION, bearer(host)));
+    }
+
+    private ResultActions saveAccount(User user, String number) throws Exception {
+        return mvc.perform(put(url + "/account").header(AUTHORIZATION, bearer(user)).contentType(APPLICATION_JSON)
+            .content("""
+                {"bankName":"은행","accountNumber":"%s","accountHolder":"예금주"}
+                """.formatted(number)));
+    }
+
+    private ResultActions changeExpense(String operation, long expenseId) throws Exception {
+        var request = switch (operation) {
+            case "CREATE" -> post(expenseUrl()).contentType(APPLICATION_JSON)
+                .content(expenseJson("추가", 600, Map.of(secondMemberId, 600L)));
+            case "UPDATE" -> put(expenseUrl() + "/" + expenseId).contentType(APPLICATION_JSON)
+                .content(expenseJson("수정", 500, Map.of(secondMemberId, 500L)));
+            case "DELETE" -> delete(expenseUrl() + "/" + expenseId);
+            default -> throw new IllegalArgumentException(operation);
+        };
+        return mvc.perform(request.header(AUTHORIZATION, bearer(host)));
+    }
+
+    private long settlementId() {
+        return jdbc.queryForObject("SELECT id FROM settlements WHERE meeting_id = ?", Long.class, meetingId);
+    }
+
+    private void assertConfirmedAmounts(long paid, long hostShare, long secondShare) throws Exception {
+        assertEquals(1, count("SELECT COUNT(*) FROM settlements WHERE meeting_id = ? AND status = 'CLOSED'", meetingId));
+        long id = settlementId();
+        List<List<Long>> balances = List.of(List.of(hostMemberId, paid, hostShare),
+            List.of(secondMemberId, 0L, secondShare), List.of(thirdMemberId, 0L, 0L));
+        List<List<Long>> transfers = secondShare == 0 ? List.of() : List.of(List.of(secondMemberId, hostMemberId, secondShare));
+        assertResponseAmounts(mvc.perform(get(url).header(AUTHORIZATION, bearer(second))), balances, transfers);
+        assertEquals(balances, jdbc.query(
+            "SELECT member_id, paid_amount, share_amount FROM settlement_balances WHERE settlement_id = ? ORDER BY balance_order",
+            (rs, row) -> List.of(rs.getLong(1), rs.getLong(2), rs.getLong(3)), id));
+        assertEquals(transfers, jdbc.query(
+            "SELECT sender_id, recipient_id, amount FROM settlement_transfers WHERE settlement_id = ? ORDER BY transfer_order",
+            (rs, row) -> List.of(rs.getLong(1), rs.getLong(2), rs.getLong(3)), id));
+        assertEquals(paid, jdbc.queryForObject(
+            "SELECT COALESCE(SUM(amount), 0) FROM expenses WHERE meeting_id = ?", Long.class, meetingId));
+        assertEquals(3, count("SELECT COUNT(*) FROM notifications WHERE meeting_id = ? AND type = 'SETTLEMENT_CLOSED'", meetingId));
+        assertEquals(3, count("SELECT COUNT(DISTINCT receiver_id) FROM notifications WHERE meeting_id = ? AND type = 'SETTLEMENT_CLOSED'", meetingId));
+    }
+
+    // 첫 요청만 외부 트랜잭션으로 감싸 실제 모임 잠금을 커밋 직전까지 유지한다.
+    // 둘째 요청은 다른 스레드의 독립 트랜잭션으로 실행하며, 첫 커밋 전에는 완료되지 않아야 한다.
+    private void runWithFirstTransactionHeld(CheckedRequest firstRequest, CheckedRequest secondRequest) throws Exception {
+        CountDownLatch firstCompleted = new CountDownLatch(1);
+        CountDownLatch releaseFirst = new CountDownLatch(1);
+        CountDownLatch secondStarted = new CountDownLatch(1);
+        var executor = Executors.newFixedThreadPool(2);
+        try {
+            var first = executor.submit(() -> transaction.executeWithoutResult(status -> {
+                try {
+                    firstRequest.perform();
+                    firstCompleted.countDown();
+                    assertTrue(releaseFirst.await(20, TimeUnit.SECONDS), "첫 트랜잭션 커밋 대기 시간 초과");
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    throw new AssertionError(e);
+                } catch (Exception e) {
+                    throw new AssertionError(e);
+                }
+            }));
+            assertTrue(firstCompleted.await(20, TimeUnit.SECONDS), "첫 요청 처리 시간 초과");
+            var second = executor.submit(() -> {
+                secondStarted.countDown();
+                secondRequest.perform();
+                return null;
+            });
+            assertTrue(secondStarted.await(20, TimeUnit.SECONDS), "둘째 요청 시작 시간 초과");
+            assertThrows(TimeoutException.class, () -> second.get(300, TimeUnit.MILLISECONDS),
+                "첫 트랜잭션 커밋 전에 둘째 요청이 완료됐습니다.");
+            releaseFirst.countDown();
+            first.get(20, TimeUnit.SECONDS);
+            second.get(20, TimeUnit.SECONDS);
+        } finally {
+            releaseFirst.countDown();
+            executor.shutdownNow();
+            assertTrue(executor.awaitTermination(20, TimeUnit.SECONDS), "동시 요청 스레드 종료 시간 초과");
+        }
+    }
+
+    @FunctionalInterface
+    private interface CheckedRequest {
+        void perform() throws Exception;
     }
 
     private String expenseUrl() { return "/api/meetings/" + meetingId + "/expenses"; }
