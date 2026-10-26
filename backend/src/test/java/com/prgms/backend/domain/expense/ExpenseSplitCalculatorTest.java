@@ -28,18 +28,18 @@ class ExpenseSplitCalculatorTest {
     void units(int unit) {
         var result = calculator.calculateResult(equal(10_000, unit, 3L, false));
         long each = 10_000 / 3 / unit * unit;
-        assertEquals(Map.of(1L, each, 2L, each, 3L, 10_000 - each * 2), result.shares());
-        assertEquals(10_000L, result.shares().values().stream().mapToLong(Long::longValue).sum());
-        assertEquals(3L, result.remainderMemberId());
+        assertEquals(Map.of(1L, each, 2L, each, 3L, 10_000 - each * 2), result.getShares());
+        assertEquals(10_000L, result.getShares().values().stream().mapToLong(Long::longValue).sum());
+        assertEquals(3L, result.getRemainderMemberId());
     }
 
     @Test @DisplayName("랜덤 결과의 사람은 고정하지 않고 유효한 담당자와 금액 보존을 확인")
     void randomRemainder() {
         for (int i = 0; i < 50; i++) {
             var result = calculator.calculateResult(equal(10_000, 1, null, true));
-            assertTrue(result.shares().containsKey(result.remainderMemberId()));
-            assertEquals(3334L, result.shares().get(result.remainderMemberId()));
-            assertEquals(10_000L, result.shares().values().stream().mapToLong(Long::longValue).sum());
+            assertTrue(result.getShares().containsKey(result.getRemainderMemberId()));
+            assertEquals(3334L, result.getShares().get(result.getRemainderMemberId()));
+            assertEquals(10_000L, result.getShares().values().stream().mapToLong(Long::longValue).sum());
         }
     }
 
