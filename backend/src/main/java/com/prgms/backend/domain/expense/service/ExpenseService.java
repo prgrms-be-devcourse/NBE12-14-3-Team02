@@ -58,8 +58,8 @@ public class ExpenseService {
         var result = splitCalculator.calculateResult(request);
         // 탈퇴자는 수정 불가
         checkParticipants(meetingId, result.shares().keySet(), expense.getParticipantIds());
-        expense.update(request.title(), request.amount().longValueExact(), request.memo(), result.shares(),
-                request.splitMode().name(), getRoundingUnit(request), result.remainderMemberId());
+        expense.update(request.getTitle(), request.getAmount().longValueExact(), request.getMemo(), result.shares(),
+                request.getSplitMode().name(), getRoundingUnit(request), result.remainderMemberId());
         return ExpenseResponse.from(expense);
     }
 
@@ -102,11 +102,11 @@ public class ExpenseService {
         Expense expense = Expense.register(
                 meetingId,
                 context.memberId(),
-                request.title(),
-                request.amount().longValueExact(),
-                request.memo(),
+                request.getTitle(),
+                request.getAmount().longValueExact(),
+                request.getMemo(),
                 shares,
-                request.splitMode().name(),
+                request.getSplitMode().name(),
                 getRoundingUnit(request),
                 splitResult.remainderMemberId()
         );
@@ -143,9 +143,9 @@ public class ExpenseService {
     }
 
     private Integer getRoundingUnit(ExpenseCreateRequest request) {
-        if (request.splitMode() != ExpenseCreateRequest.SplitMode.EQUAL) {
+        if (request.getSplitMode() != ExpenseCreateRequest.SplitMode.EQUAL) {
             return null;
         }
-        return request.roundingUnit() == null ? 1 : request.roundingUnit();
+        return request.getRoundingUnit() == null ? 1 : request.getRoundingUnit();
     }
 }

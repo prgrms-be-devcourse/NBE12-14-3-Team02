@@ -60,16 +60,16 @@ public class ExpenseRegistrationService {
         try {
             var bytes = new ByteArrayOutputStream();
             var output = new DataOutputStream(bytes);
-            writeValue(output, request.title());
-            writeValue(output, request.amount().stripTrailingZeros().toPlainString());
-            writeValue(output, request.memo());
-            writeValue(output, request.splitMode().name());
-            writeValue(output, request.roundingUnit());
-            writeValue(output, request.remainderMemberId());
-            output.writeBoolean(request.randomRemainder());
-            for (var participant : request.participants()) {
-                output.writeLong(participant.memberId());
-                writeValue(output, participant.amount() == null ? null : participant.amount().stripTrailingZeros().toPlainString());
+            writeValue(output, request.getTitle());
+            writeValue(output, request.getAmount().stripTrailingZeros().toPlainString());
+            writeValue(output, request.getMemo());
+            writeValue(output, request.getSplitMode().name());
+            writeValue(output, request.getRoundingUnit());
+            writeValue(output, request.getRemainderMemberId());
+            output.writeBoolean(request.getRandomRemainder());
+            for (var participant : request.getParticipants()) {
+                output.writeLong(participant.getMemberId());
+                writeValue(output, participant.getAmount() == null ? null : participant.getAmount().stripTrailingZeros().toPlainString());
             }
             return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(bytes.toByteArray()));
         } catch (IOException | NoSuchAlgorithmException e) {
