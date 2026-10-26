@@ -4,6 +4,7 @@ import io.micrometer.core.instrument.MeterRegistry
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
+import org.springframework.beans.factory.ObjectProvider
 import org.springframework.stereotype.Component
 import org.springframework.web.filter.OncePerRequestFilter
 import org.springframework.web.servlet.HandlerMapping
@@ -16,7 +17,7 @@ import org.springframework.web.servlet.HandlerMapping
  */
 @Component
 class ApiQueryMetricsFilter(
-    private val meterRegistry: MeterRegistry,
+    private val meterRegistryProvider: ObjectProvider<MeterRegistry>,
 ) : OncePerRequestFilter() {
     override fun shouldNotFilter(request: HttpServletRequest): Boolean = !request.requestURI.startsWith(API_PREFIX)
 
@@ -37,6 +38,9 @@ class ApiQueryMetricsFilter(
         request: HttpServletRequest,
         counts: Map<QueryType, Int>,
     ) {
+        // 웹 슬라이스 테스트처럼 MeterRegistry가 없는 환경에서는 기록하지 않는다.
+        val meterRegistry = meterRegistryProvider.ifAvailable ?: return
+
         // 패턴이 없으면 경로 변수가 그대로 태그가 되어 시계열이 폭증하므로 UNKNOWN으로 묶는다.
         val uri = request.getAttribute(HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE) as? String ?: "UNKNOWN"
         val method = request.method
