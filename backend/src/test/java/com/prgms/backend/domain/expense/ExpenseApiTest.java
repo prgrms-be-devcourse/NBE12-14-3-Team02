@@ -14,8 +14,11 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import java.math.BigDecimal;
 import java.security.Principal;
 import java.util.List;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.startsWith;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -85,6 +88,43 @@ class ExpenseApiTest {
         mvc.perform(post(URL).principal(principal).contentType(MediaType.APPLICATION_JSON)
                         .content(REQUEST.replace("\"amount\":100", "\"amount\":-1")))
                 .andExpect(status().isBadRequest()).andExpect(jsonPath("$.success").value(false));
+        verifyNoInteractions(expenses);
+    }
+
+    @Test @DisplayName("요청 JSON의 모든 필드를 DTO에 그대로 바인딩")
+    void requestBinding() throws Exception {
+        mvc.perform(post(URL).principal(principal).contentType(MediaType.APPLICATION_JSON).content("""
+                        {"title":"식사","amount":100,"memo":"메모","splitMode":"EQUAL","roundingUnit":10,
+                         "remainderMemberId":2,"randomRemainder":true,
+                         "participants":[{"memberId":1,"amount":null},{"memberId":2}]}
+                        """))
+                .andExpect(status().isCreated());
+        verify(expenses).create(10L, principal, new ExpenseCreateRequest("식사", BigDecimal.valueOf(100), "메모",
+                ExpenseCreateRequest.SplitMode.EQUAL, 10, 2L,
+                List.of(new ExpenseCreateRequest.Participant(1L, null), new ExpenseCreateRequest.Participant(2L, null)),
+                true));
+    }
+
+    @ParameterizedTest @DisplayName("randomRemainder 누락·null은 역직렬화 단계에서 400으로 거절")
+    @ValueSource(strings = {"", "\"randomRemainder\":null,"})
+    void randomRemainderRequired(String randomRemainder) throws Exception {
+        mvc.perform(post(URL).principal(principal).contentType(MediaType.APPLICATION_JSON).content(
+                        "{\"title\":\"식사\",\"amount\":100,\"splitMode\":\"EXACT\"," + randomRemainder
+                                + "\"participants\":[{\"memberId\":1,\"amount\":100}]}"))
+                .andExpect(status().isBadRequest()).andExpect(jsonPath("$.success").value(false));
+        verifyNoInteractions(expenses);
+    }
+
+    @ParameterizedTest @DisplayName("참여자 목록의 누락·null·빈 목록·null 원소·잘못된 원소는 Bean Validation에서 400으로 거절")
+    @ValueSource(strings = {"", ",\"participants\":null", ",\"participants\":[]", ",\"participants\":[null]",
+            ",\"participants\":[{\"amount\":100}]", ",\"participants\":[{\"memberId\":-1,\"amount\":100}]",
+            ",\"participants\":[{\"memberId\":1,\"amount\":-1}]"})
+    void invalidParticipants(String participants) throws Exception {
+        mvc.perform(post(URL).principal(principal).contentType(MediaType.APPLICATION_JSON).content(
+                        "{\"title\":\"식사\",\"amount\":100,\"splitMode\":\"EXACT\",\"randomRemainder\":false"
+                                + participants + "}"))
+                .andExpect(status().isBadRequest()).andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value(not(startsWith("JSON parse error"))));
         verifyNoInteractions(expenses);
     }
 
