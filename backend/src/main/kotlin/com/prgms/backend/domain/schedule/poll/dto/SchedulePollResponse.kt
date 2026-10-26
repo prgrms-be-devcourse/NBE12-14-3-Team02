@@ -13,7 +13,6 @@ class SchedulePollResponse private constructor() {
         val status: SchedulePollStatus,
     ) {
         companion object {
-            @JvmStatic
             fun from(schedulePoll: SchedulePoll): Created =
                 Created(schedulePoll.id, schedulePoll.meeting.id, schedulePoll.deadline, schedulePoll.status)
         }
@@ -27,7 +26,6 @@ class SchedulePollResponse private constructor() {
         val candidates: List<ScheduleCandidateResponse.Summary>,
     ) {
         companion object {
-            @JvmStatic
             fun from(schedulePoll: SchedulePoll): Detail =
                 Detail(
                     schedulePoll.id,
@@ -49,7 +47,6 @@ class SchedulePollResponse private constructor() {
         val status: SchedulePollStatus,
     ) {
         companion object {
-            @JvmStatic
             fun from(schedulePoll: SchedulePoll): DeadlineUpdate =
                 DeadlineUpdate(schedulePoll.id, schedulePoll.deadline, schedulePoll.status)
         }
