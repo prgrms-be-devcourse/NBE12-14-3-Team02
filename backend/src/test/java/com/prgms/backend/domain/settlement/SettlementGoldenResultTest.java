@@ -38,6 +38,8 @@ import static org.junit.jupiter.api.Assertions.fail;
 //
 // 이 파일은 전환 전 커밋에서도 컴파일되도록 두 버전에 공통인 API만 사용한다.
 // (예: SettlementStatus는 패키지가 바뀌어 import하지 않고, 저장 전 ID처럼 null/0으로 달라지는 값은 출력하지 않는다.)
+// 단, 계산기를 Kotlin으로 옮긴 뒤로는 Balance·Transfer·Result의 record 접근자(memberId())가
+// getter(getMemberId())로 바뀌어 전환 전 커밋에서는 컴파일되지 않는다. 기준값 파일은 그대로 비교에 사용한다.
 //
 // 계산 규칙을 의도적으로 바꿔 기준값을 다시 만들어야 할 때만 아래처럼 실행한다.
 //   SETTLEMENT_GOLDEN_OUT=src/test/resources/settlement/golden-results.txt \
@@ -98,14 +100,14 @@ class SettlementGoldenResultTest {
             lines.add("error=" + describe(exception));
             return;
         }
-        lines.add("balances=" + result.balances().stream()
-            .map(b -> b.memberId() + ":" + b.paidAmount() + "/" + b.shareAmount() + "/" + b.netAmount()).toList());
-        lines.add("transfers=" + result.transfers().stream()
-            .map(t -> t.senderId() + "->" + t.recipientId() + ":" + t.amount()).toList());
+        lines.add("balances=" + result.getBalances().stream()
+            .map(b -> b.getMemberId() + ":" + b.getPaidAmount() + "/" + b.getShareAmount() + "/" + b.netAmount()).toList());
+        lines.add("transfers=" + result.getTransfers().stream()
+            .map(t -> t.getSenderId() + "->" + t.getRecipientId() + ":" + t.getAmount()).toList());
 
         // 서비스의 확정 과정과 같은 순서로 결과를 엔티티에 저장한 뒤 응답 DTO로 다시 꺼낸다.
         Set<Long> recipients = new TreeSet<>();
-        result.transfers().forEach(transfer -> recipients.add(transfer.recipientId()));
+        result.getTransfers().forEach(transfer -> recipients.add(transfer.getRecipientId()));
         List<SettlementAccountSnapshot> snapshots = new ArrayList<>();
         for (long recipient : recipients) {
             // 일부 수취인은 계좌가 없는 경우를 만들어 미등록 수취인 목록도 비교한다.
@@ -115,8 +117,8 @@ class SettlementGoldenResultTest {
         }
         Settlement settlement = new Settlement(MEETING_ID);
         settlement.saveResult(
-            result.balances().stream().map(b -> new SettlementBalance(b.memberId(), b.paidAmount(), b.shareAmount())).toList(),
-            result.transfers().stream().map(t -> new SettlementTransfer(t.senderId(), t.recipientId(), t.amount())).toList());
+            result.getBalances().stream().map(b -> new SettlementBalance(b.getMemberId(), b.getPaidAmount(), b.getShareAmount())).toList(),
+            result.getTransfers().stream().map(t -> new SettlementTransfer(t.getSenderId(), t.getRecipientId(), t.getAmount())).toList());
         settlement.saveAccounts(snapshots);
         settlement.close(LEADER_ID);
         assertNotNull(settlement.getClosedAt());
@@ -143,9 +145,9 @@ class SettlementGoldenResultTest {
         return "status:" + response.getStatus().name() + " meeting:" + response.getMeetingId()
             + " closedBy:" + response.getClosedByMemberId()
             + " balances:" + response.getBalances().stream()
-                .map(b -> b.memberId() + ":" + b.paidAmount() + "/" + b.shareAmount()).toList()
+                .map(b -> b.getMemberId() + ":" + b.getPaidAmount() + "/" + b.getShareAmount()).toList()
             + " transfers:" + response.getTransfers().stream()
-                .map(t -> t.senderId() + "->" + t.recipientId() + ":" + t.amount()).toList()
+                .map(t -> t.getSenderId() + "->" + t.getRecipientId() + ":" + t.getAmount()).toList()
             + " accounts:" + response.getAccounts().stream()
                 .map(a -> a.getMemberId() + ":" + escape(a.getBankName()) + "|" + a.getAccountNumber()
                     + "|" + escape(a.getAccountHolder())).toList()

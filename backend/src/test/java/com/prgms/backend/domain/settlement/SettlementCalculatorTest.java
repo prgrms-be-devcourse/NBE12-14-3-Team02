@@ -17,7 +17,7 @@ class SettlementCalculatorTest {
         var expenses = List.of(expense(1, 30_000, Map.of(1L, 10_000L, 2L, 10_000L, 3L, 10_000L)));
         var result = calculator.calculate(10, expenses, members);
         assertEquals(List.of(new SettlementCalculator.Transfer(2, 1, 10_000),
-                new SettlementCalculator.Transfer(3, 1, 10_000)), result.transfers());
+                new SettlementCalculator.Transfer(3, 1, 10_000)), result.getTransfers());
         assertConservation(expenses, result);
     }
 
@@ -28,9 +28,9 @@ class SettlementCalculatorTest {
         var result = calculator.calculate(10, expenses, members);
         assertEquals(List.of(new SettlementCalculator.Balance(1, 30_000, 24_000),
                 new SettlementCalculator.Balance(2, 12_000, 14_000),
-                new SettlementCalculator.Balance(3, 0, 4_000)), result.balances());
+                new SettlementCalculator.Balance(3, 0, 4_000)), result.getBalances());
         assertEquals(List.of(new SettlementCalculator.Transfer(2, 1, 2_000),
-                new SettlementCalculator.Transfer(3, 1, 4_000)), result.transfers());
+                new SettlementCalculator.Transfer(3, 1, 4_000)), result.getTransfers());
         assertConservation(expenses, result);
     }
 
@@ -39,7 +39,7 @@ class SettlementCalculatorTest {
         var expenses = List.of(expense(1, 101, Map.of(2L, 50L, 3L, 51L)));
         var result = calculator.calculate(10, expenses, members);
         assertEquals(List.of(new SettlementCalculator.Transfer(2, 1, 50),
-                new SettlementCalculator.Transfer(3, 1, 51)), result.transfers());
+                new SettlementCalculator.Transfer(3, 1, 51)), result.getTransfers());
         assertConservation(expenses, result);
     }
 
@@ -48,15 +48,15 @@ class SettlementCalculatorTest {
         var expenses = List.of(expense(1, 100, Map.of(1L, 50L, 2L, 50L)),
                 expense(2, 100, Map.of(1L, 50L, 2L, 50L)));
         var result = calculator.calculate(10, expenses, members);
-        assertTrue(result.transfers().isEmpty());
+        assertTrue(result.getTransfers().isEmpty());
         assertConservation(expenses, result);
     }
 
     @Test @DisplayName("지출이 없으면 모든 금액이 0원이다")
     void empty() {
         var result = calculator.calculate(10, List.of(), members);
-        assertEquals(3, result.balances().size());
-        assertTrue(result.transfers().isEmpty());
+        assertEquals(3, result.getBalances().size());
+        assertTrue(result.getTransfers().isEmpty());
         assertConservation(List.of(), result);
     }
 
@@ -65,7 +65,7 @@ class SettlementCalculatorTest {
         var expenses = List.of(new Expense(10, 1, "기존", 10, null, members));
         var result = calculator.calculate(10, expenses, members);
         assertEquals(List.of(new SettlementCalculator.Balance(1, 10, 4),
-                new SettlementCalculator.Balance(2, 0, 3), new SettlementCalculator.Balance(3, 0, 3)), result.balances());
+                new SettlementCalculator.Balance(2, 0, 3), new SettlementCalculator.Balance(3, 0, 3)), result.getBalances());
         assertConservation(expenses, result);
     }
 
@@ -137,31 +137,31 @@ class SettlementCalculatorTest {
                 expense.getParticipantAmounts().forEach((member, share) -> expectedShares.merge(member, share, Math::addExact));
             }
         }
-        assertEquals(members.size(), result.balances().size(), "회원별 잔액의 누락 또는 중복");
-        assertEquals(members, result.balances().stream().map(SettlementCalculator.Balance::memberId)
+        assertEquals(members.size(), result.getBalances().size(), "회원별 잔액의 누락 또는 중복");
+        assertEquals(members, result.getBalances().stream().map(SettlementCalculator.Balance::getMemberId)
                 .collect(java.util.stream.Collectors.toSet()), "잔액의 회원 집합");
         long total = expenses.stream().mapToLong(Expense::getAmount).sum();
-        assertEquals(total, result.balances().stream().mapToLong(SettlementCalculator.Balance::paidAmount).sum());
-        assertEquals(total, result.balances().stream().mapToLong(SettlementCalculator.Balance::shareAmount).sum());
-        long sent = result.transfers().stream().mapToLong(SettlementCalculator.Transfer::amount).sum();
-        assertEquals(sent, result.balances().stream().mapToLong(b -> Math.max(0, b.netAmount())).sum());
-        assertEquals(sent, result.balances().stream().mapToLong(b -> Math.max(0, -b.netAmount())).sum());
-        for (var transfer : result.transfers()) {
-            assertTrue(transfer.amount() > 0);
-            assertNotEquals(transfer.senderId(), transfer.recipientId());
-            assertTrue(members.contains(transfer.senderId()) && members.contains(transfer.recipientId()));
+        assertEquals(total, result.getBalances().stream().mapToLong(SettlementCalculator.Balance::getPaidAmount).sum());
+        assertEquals(total, result.getBalances().stream().mapToLong(SettlementCalculator.Balance::getShareAmount).sum());
+        long sent = result.getTransfers().stream().mapToLong(SettlementCalculator.Transfer::getAmount).sum();
+        assertEquals(sent, result.getBalances().stream().mapToLong(b -> Math.max(0, b.netAmount())).sum());
+        assertEquals(sent, result.getBalances().stream().mapToLong(b -> Math.max(0, -b.netAmount())).sum());
+        for (var transfer : result.getTransfers()) {
+            assertTrue(transfer.getAmount() > 0);
+            assertNotEquals(transfer.getSenderId(), transfer.getRecipientId());
+            assertTrue(members.contains(transfer.getSenderId()) && members.contains(transfer.getRecipientId()));
         }
-        for (var balance : result.balances()) {
-            assertEquals(expectedPaid.get(balance.memberId()).longValue(), balance.paidAmount(),
-                    "모임원 " + balance.memberId() + "의 원본 결제액");
-            assertEquals(expectedShares.get(balance.memberId()).longValue(), balance.shareAmount(),
-                    "모임원 " + balance.memberId() + "의 원본 부담액");
-            long outgoing = result.transfers().stream().filter(t -> t.senderId() == balance.memberId())
-                    .mapToLong(SettlementCalculator.Transfer::amount).sum();
-            long incoming = result.transfers().stream().filter(t -> t.recipientId() == balance.memberId())
-                    .mapToLong(SettlementCalculator.Transfer::amount).sum();
-            assertEquals(balance.shareAmount(), balance.paidAmount() + outgoing - incoming,
-                    "모임원 " + balance.memberId() + "의 최종 부담액");
+        for (var balance : result.getBalances()) {
+            assertEquals(expectedPaid.get(balance.getMemberId()).longValue(), balance.getPaidAmount(),
+                    "모임원 " + balance.getMemberId() + "의 원본 결제액");
+            assertEquals(expectedShares.get(balance.getMemberId()).longValue(), balance.getShareAmount(),
+                    "모임원 " + balance.getMemberId() + "의 원본 부담액");
+            long outgoing = result.getTransfers().stream().filter(t -> t.getSenderId() == balance.getMemberId())
+                    .mapToLong(SettlementCalculator.Transfer::getAmount).sum();
+            long incoming = result.getTransfers().stream().filter(t -> t.getRecipientId() == balance.getMemberId())
+                    .mapToLong(SettlementCalculator.Transfer::getAmount).sum();
+            assertEquals(balance.getShareAmount(), balance.getPaidAmount() + outgoing - incoming,
+                    "모임원 " + balance.getMemberId() + "의 최종 부담액");
         }
     }
 }
