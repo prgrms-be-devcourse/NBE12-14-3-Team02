@@ -3,7 +3,7 @@ package com.prgms.backend.domain.expense;
 import com.prgms.backend.domain.expense.dto.ExpenseCreateRequest;
 import com.prgms.backend.domain.expense.dto.ExpenseCreateRequest.Participant;
 import com.prgms.backend.domain.expense.dto.ExpenseCreateRequest.SplitMode;
-import com.prgms.backend.domain.expense.exception.ExpenseRequestException;
+import com.prgms.backend.global.exception.custom.expense.ExpenseRequestException;
 import com.prgms.backend.domain.expense.service.ExpenseSplitCalculator;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
