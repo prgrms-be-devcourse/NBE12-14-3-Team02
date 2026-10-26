@@ -9,7 +9,6 @@ class ScheduleCandidateResponse private constructor() {
         val candidateDate: LocalDate,
     ) {
         companion object {
-            @JvmStatic
             fun from(candidate: ScheduleCandidate): Summary = Summary(candidate.id, candidate.candidateDate)
         }
     }
