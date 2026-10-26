@@ -38,7 +38,7 @@ class ExpenseServiceTest {
         var context = new MeetingAccessPort.Context(1, true, true, Set.of(1L, 2L, 3L));
         when(access.requireMember(10, principal)).thenReturn(context);
         when(access.requireMemberForRead(10, principal)).thenReturn(context);
-        when(settlements.findByMeetingId(10)).thenReturn(Optional.empty());
+        when(settlements.findByMeetingId(10)).thenReturn(null);
         List<MeetingMember> joinedMembers = List.of(member(1), member(2));
         when(members.findAllByMeetingIdAndStatus(10L, MeetingMemberStatus.JOINED)).thenReturn(joinedMembers);
         when(expenses.save(any(Expense.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -94,7 +94,7 @@ class ExpenseServiceTest {
     void closedSettlement() {
         Settlement settlement = new Settlement(10);
         settlement.close(1);
-        when(settlements.findByMeetingId(10)).thenReturn(Optional.of(settlement));
+        when(settlements.findByMeetingId(10)).thenReturn(settlement);
         assertAllMutationsRejected();
     }
 
@@ -131,7 +131,7 @@ class ExpenseServiceTest {
     @Test @DisplayName("확정된 목록도 읽을 수 있지만 편집 가능 여부는 false")
     void readClosedList() {
         Settlement settlement = new Settlement(10); settlement.close(1);
-        when(settlements.findByMeetingId(10)).thenReturn(Optional.of(settlement));
+        when(settlements.findByMeetingId(10)).thenReturn(settlement);
         Expense expense = existing(10, 1);
         when(expenses.findByMeetingIdOrderByIdAsc(10)).thenReturn(List.of(expense));
         var result = service.list(10, principal);

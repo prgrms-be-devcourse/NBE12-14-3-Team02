@@ -43,7 +43,7 @@ public class SettlementService {
         // 지출 변경과 동일한 잠금으로 일관된 예상 결과를 계산하되 저장하지 않습니다.
         var context = meetingAccess.requireMember(meetingId, principal);
         if (!context.meetingOpen()) throw new SettlementRequestException(409, "종료된 모임입니다.");
-        settlementRepository.findByMeetingId(meetingId).ifPresent(Settlement::checkOpen);
+        java.util.Optional.ofNullable(settlementRepository.findByMeetingId(meetingId)).ifPresent(Settlement::checkOpen);
         var result = calculator.calculate(meetingId, expenseRepository.findByMeetingIdOrderByIdAsc(meetingId), context.memberIds());
         var registered = accountRepository.findByMeetingId(meetingId).stream().map(SettlementAccount::getMemberId).collect(Collectors.toSet());
         var missing = missingRecipients(result, registered);
@@ -65,7 +65,7 @@ public class SettlementService {
         }
 
         // 지출 상시 등록,모임장의 정산 확정 요청을 통해 정산 데이터 생성
-        Settlement settlement = settlementRepository.findByMeetingId(meetingId)
+        Settlement settlement = java.util.Optional.ofNullable(settlementRepository.findByMeetingId(meetingId))
                 .orElseGet(() -> new Settlement(meetingId));
         settlement.checkOpen();
 
@@ -105,7 +105,7 @@ public class SettlementService {
     @Transactional(readOnly = true)
     public SettlementResponse getResult(long meetingId, Principal principal) {
         var context = meetingAccess.requireMemberForRead(meetingId, principal);
-        Settlement settlement = settlementRepository.findByMeetingId(meetingId)
+        Settlement settlement = java.util.Optional.ofNullable(settlementRepository.findByMeetingId(meetingId))
                 .orElseThrow(() -> new SettlementRequestException(404, "아직 확정된 정산이 없습니다."));
         if (settlement.getStatus() != SettlementStatus.CLOSED) {
             throw new SettlementRequestException(404, "아직 확정된 정산이 없습니다.");

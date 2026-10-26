@@ -34,7 +34,7 @@ public class ExpenseService {
     @Transactional(readOnly = true)
     public ExpenseListResponse list(long meetingId, Principal principal) {
         var context = meetingAccess.requireMemberForRead(meetingId, principal);
-        boolean closed = settlementRepository.findByMeetingId(meetingId)
+        boolean closed = java.util.Optional.ofNullable(settlementRepository.findByMeetingId(meetingId))
                 .map(settlement -> settlement.getStatus() == SettlementStatus.CLOSED).orElse(false);
         var expenses = expenseRepository.findByMeetingIdOrderByIdAsc(meetingId).stream()
                 .map(ExpenseResponse::from).toList();
@@ -120,7 +120,7 @@ public class ExpenseService {
         }
 
         //정산 데이터가 없거나 마감 안했으면 등록 가능(open상태), 확정 누르면 closed로 등록 안됨
-        settlementRepository.findByMeetingId(meetingId).ifPresent(settlement -> settlement.checkOpen());
+        java.util.Optional.ofNullable(settlementRepository.findByMeetingId(meetingId)).ifPresent(settlement -> settlement.checkOpen());
     }
 
     //

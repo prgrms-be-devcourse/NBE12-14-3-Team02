@@ -97,7 +97,7 @@ class SettlementJavaPersistenceCompatibilityTest extends MySqlContainerSupport {
     @DisplayName("Java가 확정한 정산의 금액·목록 순서·계좌 스냅샷·상태·시각·버전과 회원별 응답이 유지된다")
     void readsJavaSettlements() {
         entityManager.clear();
-        Settlement closed = settlements.findByMeetingId(MEETING_ID).orElseThrow();
+        Settlement closed = java.util.Objects.requireNonNull(settlements.findByMeetingId(MEETING_ID));
         assertEquals(900000L, closed.getId());
         assertEquals("CLOSED", closed.getStatus().name());
         assertEquals(41L, closed.getClosedByMemberId());
@@ -122,7 +122,7 @@ class SettlementJavaPersistenceCompatibilityTest extends MySqlContainerSupport {
         assertEquals(List.of(BALANCES.get(2)), mine.getBalances());
         assertEquals(List.of(TRANSFERS.get(1)), mine.getTransfers());
 
-        Settlement open = settlements.findByMeetingId(890002).orElseThrow();
+        Settlement open = java.util.Objects.requireNonNull(settlements.findByMeetingId(890002));
         assertEquals("OPEN", open.getStatus().name());
         assertEquals(0L, open.getVersion());
         assertNull(open.getClosedAt());
@@ -132,10 +132,10 @@ class SettlementJavaPersistenceCompatibilityTest extends MySqlContainerSupport {
         assertTrue(open.getAccounts().isEmpty());
 
         // 현재 계좌가 바뀌어도 Java가 확정한 스냅샷은 독립적으로 유지되어야 한다.
-        accounts.findByMeetingIdAndMemberId(MEETING_ID, 17).orElseThrow().update("새은행", "999", "새예금주");
+        java.util.Objects.requireNonNull(accounts.findByMeetingIdAndMemberId(MEETING_ID, 17)).update("새은행", "999", "새예금주");
         entityManager.flush();
         entityManager.clear();
-        Settlement reloaded = settlements.findByMeetingId(MEETING_ID).orElseThrow();
+        Settlement reloaded = java.util.Objects.requireNonNull(settlements.findByMeetingId(MEETING_ID));
         assertEquals("001-234", reloaded.getAccounts().getFirst().getAccountNumber());
         assertEquals(0L, reloaded.getVersion());
     }
