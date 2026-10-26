@@ -49,9 +49,9 @@ class ExpenseServiceTest {
     @Test @DisplayName("인증된 모임원이 등록하면 결제자와 분담액을 저장")
     void create() {
         var response = service.create(10, principal, request(100, 1, 100));
-        assertEquals(1L, response.payerMemberId());
-        assertEquals(100L, response.amount());
-        assertEquals(100L, response.participants().getFirst().amount());
+        assertEquals(1L, response.getPayerMemberId());
+        assertEquals(100L, response.getAmount());
+        assertEquals(100L, response.getParticipants().getFirst().getAmount());
         verify(expenses).save(any(Expense.class));
     }
 
@@ -62,12 +62,12 @@ class ExpenseServiceTest {
         ReflectionTestUtils.setField(expense, "createdAt", created);
         expense.attachReceipt("receipt/original");
         var response = service.update(10, 7, principal, request(200, 2, 200));
-        assertEquals(7L, response.id());
-        assertEquals(1L, response.payerMemberId());
-        assertEquals(created, response.createdAt());
-        assertEquals(200L, response.amount());
+        assertEquals(7L, response.getId());
+        assertEquals(1L, response.getPayerMemberId());
+        assertEquals(created, response.getCreatedAt());
+        assertEquals(200L, response.getAmount());
         assertEquals(200L, expense.getAmount());
-        assertEquals(response.amount(), response.participants().stream().mapToLong(share -> share.amount()).sum());
+        assertEquals(response.getAmount(), response.getParticipants().stream().mapToLong(share -> share.getAmount()).sum());
         assertEquals(Map.of(2L, 200L), expense.getParticipantAmounts());
         assertEquals(Set.of(2L), expense.getParticipantIds());
         assertEquals("receipt/original", expense.getReceiptKey());
@@ -135,7 +135,7 @@ class ExpenseServiceTest {
         Expense expense = existing(10, 1);
         when(expenses.findByMeetingIdOrderByIdAsc(10)).thenReturn(List.of(expense));
         var result = service.list(10, principal);
-        assertFalse(result.editable()); assertEquals(1, result.expenses().size());
+        assertFalse(result.getEditable()); assertEquals(1, result.getExpenses().size());
         verify(access, never()).requireMember(anyLong(), any());
     }
 

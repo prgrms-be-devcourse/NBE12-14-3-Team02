@@ -58,6 +58,28 @@ class ExpenseApiTest {
         verify(expenses).delete(10, 7, principal);
     }
 
+    @Test @DisplayName("목록 응답의 JSON 필드 이름과 null 값을 기존 계약대로 유지")
+    void listResponseContract() throws Exception {
+        ExpenseResponse response = new ExpenseResponse(7L, 10L, 1L, "식사", 100, null, "EXACT", null,
+                null, List.of(new ExpenseResponse.Share(1, 100)), null, true);
+        when(expenses.list(10, principal)).thenReturn(new ExpenseListResponse(1, true, false, List.of(response)));
+        mvc.perform(get(URL).principal(principal)).andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.currentMemberId").value(1))
+                .andExpect(jsonPath("$.data.leader").value(true))
+                .andExpect(jsonPath("$.data.editable").value(false))
+                .andExpect(jsonPath("$.data.expenses[0].meetingId").value(10))
+                .andExpect(jsonPath("$.data.expenses[0].payerMemberId").value(1))
+                .andExpect(jsonPath("$.data.expenses[0].title").value("식사"))
+                .andExpect(jsonPath("$.data.expenses[0].splitMode").value("EXACT"))
+                .andExpect(jsonPath("$.data.expenses[0].memo").isEmpty())
+                .andExpect(jsonPath("$.data.expenses[0].roundingUnit").isEmpty())
+                .andExpect(jsonPath("$.data.expenses[0].remainderMemberId").isEmpty())
+                .andExpect(jsonPath("$.data.expenses[0].createdAt").isEmpty())
+                .andExpect(jsonPath("$.data.expenses[0].hasReceipt").value(true))
+                .andExpect(jsonPath("$.data.expenses[0].participants[0].memberId").value(1))
+                .andExpect(jsonPath("$.data.expenses[0].participants[0].amount").value(100));
+    }
+
     @Test @DisplayName("음수 금액의 요청은 서비스 호출 전에 400으로 거절")
     void invalidRequest() throws Exception {
         mvc.perform(post(URL).principal(principal).contentType(MediaType.APPLICATION_JSON)
