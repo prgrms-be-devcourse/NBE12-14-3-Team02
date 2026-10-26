@@ -52,8 +52,8 @@ public class SettlementHistoryService {
         for (var settlement : settlements) {
             var member = byMeeting.get(settlement.getMeetingId());
             var personal = SettlementResponse.forMember(settlement, member.getId(), true);
-            if (personal.balances().isEmpty()) continue;
-            personal.transfers().forEach(transfer -> { visibleMembers.add(transfer.senderId()); visibleMembers.add(transfer.recipientId()); });
+            if (personal.getBalances().isEmpty()) continue;
+            personal.getTransfers().forEach(transfer -> { visibleMembers.add(transfer.senderId()); visibleMembers.add(transfer.recipientId()); });
             entries.add(new Entry(member.getMeeting().getName(), member.getId(), Map.of(), personal));
         }
         Map<Long, String> names = visibleMembers.isEmpty() ? Map.of() : entityManager.createQuery(
@@ -62,7 +62,7 @@ public class SettlementHistoryService {
                 .collect(Collectors.toMap(MeetingMember::getId, member -> member.getUser().getNickname()));
         return entries.stream().map(entry -> {
             Map<Long, String> relevantNames = new HashMap<>();
-            entry.result().transfers().forEach(transfer -> {
+            entry.result().getTransfers().forEach(transfer -> {
                 relevantNames.put(transfer.senderId(), names.getOrDefault(transfer.senderId(), "모임원 #" + transfer.senderId()));
                 relevantNames.put(transfer.recipientId(), names.getOrDefault(transfer.recipientId(), "모임원 #" + transfer.recipientId()));
             });

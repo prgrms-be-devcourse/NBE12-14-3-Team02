@@ -53,16 +53,16 @@ class SettlementServiceTest {
         when(expenses.findByMeetingIdOrderByIdAsc(10)).thenReturn(List.of(
                 Expense.register(10, 1, "식사", 300, null, Map.of(1L, 100L, 2L, 200L), "EXACT", null, null)));
         var result = service.confirm(10, principal);
-        assertEquals(SettlementStatus.CLOSED, result.status());
-        assertEquals(1L, result.closedByMemberId()); assertNotNull(result.closedAt());
-        assertEquals(List.of(new SettlementCalculator.Transfer(2, 1, 200)), result.transfers());
+        assertEquals(SettlementStatus.CLOSED, result.getStatus());
+        assertEquals(1L, result.getClosedByMemberId()); assertNotNull(result.getClosedAt());
+        assertEquals(List.of(new SettlementCalculator.Transfer(2, 1, 200)), result.getTransfers());
         ArgumentCaptor<Settlement> saved = ArgumentCaptor.forClass(Settlement.class);
         verify(settlements).save(saved.capture());
         assertEquals(2, saved.getValue().getBalances().size());
         assertEquals(200, saved.getValue().getTransfers().getFirst().getAmount());
-        verify(events).publishEvent(new SettlementClosedEvent(10, 100, result.closedAt()));
+        verify(events).publishEvent(new SettlementClosedEvent(10, 100, result.getClosedAt()));
         assertEquals(1, saved.getValue().getAccounts().size());
-        assertTrue(result.missingAccountMemberIds().isEmpty());
+        assertTrue(result.getMissingAccountMemberIds().isEmpty());
     }
 
     @Test @DisplayName("수취인 계좌가 없으면 결과 저장과 이벤트 발행 없이 확정을 거절한다")
@@ -85,7 +85,7 @@ class SettlementServiceTest {
 
         // 계좌를 보완하면 동일 지출을 확정할 수 있습니다.
         when(accounts.findByMeetingId(10)).thenReturn(List.of(account(1)));
-        assertEquals(SettlementStatus.CLOSED, service.confirm(10, principal).status());
+        assertEquals(SettlementStatus.CLOSED, service.confirm(10, principal).getStatus());
     }
 
     @Test @DisplayName("송금할 금액이 없으면 계좌 없이 확정할 수 있다")
@@ -93,8 +93,8 @@ class SettlementServiceTest {
         when(expenses.findByMeetingIdOrderByIdAsc(10)).thenReturn(List.of(
                 Expense.register(10, 1, "개인 식사", 100, null, Map.of(1L, 100L), "EXACT", null, null)));
         var result = service.confirm(10, principal);
-        assertEquals(SettlementStatus.CLOSED, result.status());
-        assertTrue(result.transfers().isEmpty());
+        assertEquals(SettlementStatus.CLOSED, result.getStatus());
+        assertTrue(result.getTransfers().isEmpty());
     }
 
     @Test @DisplayName("미리보기는 확정과 같은 수취인 기준으로 미등록 계좌를 안내한다")
@@ -102,8 +102,8 @@ class SettlementServiceTest {
         when(accounts.findByMeetingId(10)).thenReturn(List.of(account(2)));
         when(expenses.findByMeetingIdOrderByIdAsc(10)).thenReturn(List.of(
                 Expense.register(10, 1, "식사", 300, null, Map.of(1L, 100L, 2L, 200L), "EXACT", null, null)));
-        assertEquals(List.of(1L), service.preview(10, principal).missingAccounts().stream()
-                .map(account -> account.memberId()).toList());
+        assertEquals(List.of(1L), service.preview(10, principal).getMissingAccounts().stream()
+                .map(account -> account.getMemberId()).toList());
         verify(settlements, never()).save(any());
         verifyNoInteractions(events);
     }
@@ -149,7 +149,7 @@ class SettlementServiceTest {
         when(settlements.findByMeetingId(10)).thenReturn(Optional.of(settlement));
         assertEquals(404, assertThrows(BusinessException.class, () -> service.getResult(10, principal)).getCode());
         settlement.close(1);
-        assertEquals(SettlementStatus.CLOSED, service.getResult(10, principal).status());
+        assertEquals(SettlementStatus.CLOSED, service.getResult(10, principal).getStatus());
         verifyNoInteractions(expenses);
     }
 
