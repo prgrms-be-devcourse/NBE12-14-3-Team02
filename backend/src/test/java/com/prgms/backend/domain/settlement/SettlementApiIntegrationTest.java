@@ -1,5 +1,6 @@
 package com.prgms.backend.domain.settlement;
 
+import com.jayway.jsonpath.JsonPath;
 import com.prgms.backend.domain.meeting.entity.Meeting;
 import com.prgms.backend.domain.meeting.entity.MeetingMember;
 import com.prgms.backend.domain.meeting.repository.MeetingMemberRepository;
@@ -11,6 +12,9 @@ import com.prgms.backend.support.MySqlContainerSupport;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -25,9 +29,11 @@ import org.springframework.test.web.servlet.ResultActions;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -275,6 +281,163 @@ class SettlementApiIntegrationTest extends MySqlContainerSupport {
             List.of(List.of(hostMemberId, 10_000L, 3_300L), List.of(secondMemberId, 0L, 3_300L),
                 List.of(thirdMemberId, 0L, 3_400L)),
             List.of(List.of(secondMemberId, hostMemberId, 3_300L), List.of(thirdMemberId, hostMemberId, 3_400L)));
+    }
+
+    @Test
+    @DisplayName("지출 수정으로 바뀐 총금액·참여자·옵션이 저장되고 최종 정산에도 반영된다")
+    void settlesUpdatedExpense() throws Exception {
+        createExpense(host, "수정 전", 300, Map.of(hostMemberId, 100L, secondMemberId, 200L));
+        long expenseId = jdbc.queryForObject("SELECT id FROM expenses WHERE meeting_id = ?", Long.class, meetingId);
+        Object createdAt = jdbc.queryForObject("SELECT created_at FROM expenses WHERE id = ?", Object.class, expenseId);
+        // EQUAL → EXACT 전환에서 기존 차액 옵션도 제거되는지 확인한다.
+        mvc.perform(put(expenseUrl() + "/" + expenseId).header(AUTHORIZATION, bearer(host))
+                .contentType(APPLICATION_JSON).content("""
+                    {"title":"균등 수정","amount":10000,"splitMode":"EQUAL","roundingUnit":100,
+                     "remainderMemberId":%d,"randomRemainder":false,"participants":[{"memberId":%d},{"memberId":%d},{"memberId":%d}]}
+                    """.formatted(thirdMemberId, hostMemberId, secondMemberId, thirdMemberId)))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.data.amount").value(10000));
+        mvc.perform(put(expenseUrl() + "/" + expenseId).header(AUTHORIZATION, bearer(host))
+                .contentType(APPLICATION_JSON).content(expenseJson("수정 후", 500, Map.of(thirdMemberId, 500L))))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data.id").value(expenseId))
+            .andExpect(jsonPath("$.data.payerMemberId").value(hostMemberId))
+            .andExpect(jsonPath("$.data.amount").value(500))
+            .andExpect(jsonPath("$.data.splitMode").value("EXACT"))
+            .andExpect(jsonPath("$.data.roundingUnit").doesNotExist())
+            .andExpect(jsonPath("$.data.remainderMemberId").doesNotExist());
+        mvc.perform(get(expenseUrl() + "/" + expenseId).header(AUTHORIZATION, bearer(host)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data.amount").value(500))
+            .andExpect(jsonPath("$.data.participants.length()").value(1))
+            .andExpect(jsonPath("$.data.participants[0].memberId").value(thirdMemberId))
+            .andExpect(jsonPath("$.data.participants[0].amount").value(500));
+        assertEquals(500L, jdbc.queryForObject("SELECT amount FROM expenses WHERE id = ?", Long.class, expenseId));
+        assertEquals(createdAt, jdbc.queryForObject("SELECT created_at FROM expenses WHERE id = ?", Object.class, expenseId));
+        assertEquals(List.of(List.of(thirdMemberId, 500L)), jdbc.query(
+            "SELECT member_id, share_amount FROM expense_shares WHERE expense_id = ?",
+            (rs, row) -> List.of(rs.getLong(1), rs.getLong(2)), expenseId));
+        assertEquals(List.of(thirdMemberId), jdbc.queryForList(
+            "SELECT member_id FROM expense_participants WHERE expense_id = ?", Long.class, expenseId));
+        assertEquals(1, count("SELECT COUNT(*) FROM expenses WHERE id = ? AND rounding_unit IS NULL"
+            + " AND remainder_member_id IS NULL AND split_mode = 'EXACT'", expenseId));
+        assertSettlementAmounts(
+            List.of(List.of(hostMemberId, 500L, 0L), List.of(secondMemberId, 0L, 0L), List.of(thirdMemberId, 0L, 500L)),
+            List.of(List.of(thirdMemberId, hostMemberId, 500L)));
+    }
+
+    @Test
+    @DisplayName("같은 요청 번호로 재등록해도 같은 지출을 반환하고 정산 금액은 한 번만 반영된다")
+    void idempotentRegistration() throws Exception {
+        String key = UUID.randomUUID().toString();
+        String body = expenseJson("재시도", 10_001, Map.of(secondMemberId, 10_001L));
+        register(key, body);
+        long expenseId = onlyExpenseId();
+        register(key.toUpperCase(java.util.Locale.ROOT), body)
+            .andExpect(jsonPath("$.data.id").value(expenseId));
+        assertSingleRegistration(expenseId, 10_001);
+        assertSettlementAmounts(
+            List.of(List.of(hostMemberId, 10_001L, 0L), List.of(secondMemberId, 0L, 10_001L), List.of(thirdMemberId, 0L, 0L)),
+            List.of(List.of(secondMemberId, hostMemberId, 10_001L)));
+        // 확정 이후 도착한 동일 요청도 새 지출을 만들거나 재계산하지 않는다.
+        register(key, body).andExpect(jsonPath("$.data.id").value(expenseId));
+        assertSingleRegistration(expenseId, 10_001);
+    }
+
+    @Test
+    @DisplayName("같은 요청 번호의 내용이 바뀌면 409이고 원래 지출·분담액을 유지한다")
+    void conflictingRegistration() throws Exception {
+        String key = UUID.randomUUID().toString();
+        register(key, expenseJson("원본", 100, Map.of(secondMemberId, 100L)));
+        long expenseId = onlyExpenseId();
+        assertError(mvc.perform(post(expenseUrl()).header(AUTHORIZATION, bearer(host)).header("Idempotency-Key", key)
+            .contentType(APPLICATION_JSON).content(expenseJson("변경", 200, Map.of(thirdMemberId, 200L)))), 409);
+        assertSingleRegistration(expenseId, 100);
+        assertEquals(List.of(List.of(secondMemberId, 100L)), jdbc.query(
+            "SELECT member_id, share_amount FROM expense_shares WHERE expense_id = ?",
+            (rs, row) -> List.of(rs.getLong(1), rs.getLong(2)), expenseId));
+    }
+
+    @Test
+    @DisplayName("등록 후 삭제한 지출의 요청 번호를 재사용하면 410이고 지출이 부활하지 않는다")
+    void deletedRegistration() throws Exception {
+        String key = UUID.randomUUID().toString();
+        String body = expenseJson("삭제", 100, Map.of(secondMemberId, 100L));
+        register(key, body);
+        long expenseId = onlyExpenseId();
+        mvc.perform(delete(expenseUrl() + "/" + expenseId).header(AUTHORIZATION, bearer(host)))
+            .andExpect(status().isNoContent());
+        assertError(mvc.perform(post(expenseUrl()).header(AUTHORIZATION, bearer(host)).header("Idempotency-Key", key)
+            .contentType(APPLICATION_JSON).content(body)), 410);
+        assertEquals(0, count("SELECT COUNT(*) FROM expenses WHERE meeting_id = ?", meetingId));
+        assertEquals(0, count("SELECT COUNT(*) FROM expense_shares WHERE expense_id = ?", expenseId));
+        assertEquals(0, count("SELECT COUNT(*) FROM expense_participants WHERE expense_id = ?", expenseId));
+        assertEquals(1, count("SELECT COUNT(*) FROM expense_registrations WHERE meeting_id = ?", meetingId));
+    }
+
+    @Test
+    @DisplayName("같은 요청 번호로 동시에 등록해도 지출·요청 기록은 한 건이고 랜덤 차액도 동일하다")
+    void concurrentRegistration() throws Exception {
+        String key = UUID.randomUUID().toString();
+        String body = """
+            {"title":"동시 재시도","amount":10000,"splitMode":"EQUAL","roundingUnit":100,
+             "randomRemainder":true,"participants":[{"memberId":%d},{"memberId":%d},{"memberId":%d}]}
+            """.formatted(hostMemberId, secondMemberId, thirdMemberId);
+        String authorization = bearer(host);
+        CountDownLatch ready = new CountDownLatch(2);
+        CountDownLatch start = new CountDownLatch(1);
+        Map<String, Object> firstData;
+        try (var executor = Executors.newFixedThreadPool(2)) {
+            java.util.concurrent.Callable<String> request = () -> {
+                ready.countDown();
+                assertTrue(start.await(10, TimeUnit.SECONDS), "동시 등록 시작 시간 초과");
+                return mvc.perform(post(expenseUrl()).header(AUTHORIZATION, authorization).header("Idempotency-Key", key)
+                        .contentType(APPLICATION_JSON).content(body))
+                    .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+            };
+            var first = executor.submit(request);
+            var secondRequest = executor.submit(request);
+            try {
+                assertTrue(ready.await(10, TimeUnit.SECONDS), "동시 등록 준비 시간 초과");
+                start.countDown();
+                firstData = JsonPath.read(first.get(20, TimeUnit.SECONDS), "$.data");
+                Map<String, Object> secondData = JsonPath.read(secondRequest.get(20, TimeUnit.SECONDS), "$.data");
+                // 최초 응답과 DB 재조회 응답의 시각 정밀도 차이에 의존하지 않는다.
+                for (String field : List.of("id", "amount", "payerMemberId", "splitMode", "roundingUnit", "remainderMemberId", "participants")) {
+                    assertEquals(firstData.get(field), secondData.get(field), "재시도 응답의 " + field);
+                }
+            } finally {
+                start.countDown();
+                executor.shutdownNow();
+            }
+        }
+        long expenseId = onlyExpenseId();
+        assertEquals(expenseId, ((Number) firstData.get("id")).longValue());
+        assertSingleRegistration(expenseId, 10_000);
+        Long remainderMemberId = jdbc.queryForObject("SELECT remainder_member_id FROM expenses WHERE id = ?", Long.class, expenseId);
+        assertEquals(remainderMemberId.longValue(), ((Number) firstData.get("remainderMemberId")).longValue());
+        assertTrue(List.of(hostMemberId, secondMemberId, thirdMemberId).contains(remainderMemberId));
+        assertEquals(3400L, jdbc.queryForObject("SELECT share_amount FROM expense_shares WHERE expense_id = ? AND member_id = ?",
+            Long.class, expenseId, remainderMemberId));
+    }
+
+    private String expenseUrl() { return "/api/meetings/" + meetingId + "/expenses"; }
+
+    private ResultActions register(String key, String body) throws Exception {
+        return mvc.perform(post(expenseUrl()).header(AUTHORIZATION, bearer(host)).header("Idempotency-Key", key)
+                .contentType(APPLICATION_JSON).content(body))
+            .andExpect(status().isCreated());
+    }
+
+    private long onlyExpenseId() {
+        return jdbc.queryForObject("SELECT id FROM expenses WHERE meeting_id = ?", Long.class, meetingId);
+    }
+
+    private void assertSingleRegistration(long expenseId, long amount) {
+        assertEquals(1, count("SELECT COUNT(*) FROM expenses WHERE meeting_id = ?", meetingId));
+        assertEquals(amount, jdbc.queryForObject("SELECT amount FROM expenses WHERE id = ?", Long.class, expenseId));
+        assertEquals(amount, jdbc.queryForObject("SELECT SUM(share_amount) FROM expense_shares WHERE expense_id = ?", Long.class, expenseId));
+        assertEquals(1, count("SELECT COUNT(*) FROM expense_registrations WHERE meeting_id = ?", meetingId));
+        assertEquals(expenseId, jdbc.queryForObject("SELECT expense_id FROM expense_registrations WHERE meeting_id = ?", Long.class, meetingId));
     }
 
     private void assertSettlementAmounts(List<List<Long>> balances, List<List<Long>> transfers) throws Exception {

@@ -65,6 +65,9 @@ class ExpenseServiceTest {
         assertEquals(7L, response.id());
         assertEquals(1L, response.payerMemberId());
         assertEquals(created, response.createdAt());
+        assertEquals(200L, response.amount());
+        assertEquals(200L, expense.getAmount());
+        assertEquals(response.amount(), response.participants().stream().mapToLong(share -> share.amount()).sum());
         assertEquals(Map.of(2L, 200L), expense.getParticipantAmounts());
         assertEquals(Set.of(2L), expense.getParticipantIds());
         assertEquals("receipt/original", expense.getReceiptKey());
