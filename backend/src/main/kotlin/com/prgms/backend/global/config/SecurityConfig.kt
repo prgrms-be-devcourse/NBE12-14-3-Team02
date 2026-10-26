@@ -38,6 +38,7 @@ class SecurityConfig(
                 authorize("/api/user/check-email", permitAll)
                 authorize("/swagger-ui/**", permitAll)
                 authorize("/v3/api-docs/**", permitAll)
+                authorize("/actuator/**", permitAll) // 별도 management 포트로만 노출
                 authorize(anyRequest, authenticated)
             }
             csrf { disable() }
