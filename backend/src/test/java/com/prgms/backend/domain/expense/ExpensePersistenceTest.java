@@ -84,7 +84,8 @@ class ExpensePersistenceTest extends MySqlContainerSupport {
         assertNotEquals(0L, id);
         entityManager.clear();
 
-        ExpenseRegistration found = registrations.findByMeetingIdAndMemberIdAndRequestKey(MEETING_ID, 1, key).orElseThrow();
+        ExpenseRegistration found = java.util.Objects.requireNonNull(
+                registrations.findByMeetingIdAndMemberIdAndRequestKey(MEETING_ID, 1, key));
         assertEquals(id, found.getId());
         assertEquals(7L, found.getExpenseId());
         assertEquals("f".repeat(64), found.getFingerprint());

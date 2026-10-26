@@ -40,9 +40,8 @@ public class ExpenseRegistrationService {
         }
         String key = requestKey.toLowerCase(Locale.ROOT);
         String fingerprint = fingerprint(request);
-        var previous = registrations.findByMeetingIdAndMemberIdAndRequestKey(meetingId, context.getMemberId(), key);
-        if (previous.isPresent()) {
-            var registration = previous.get();
+        var registration = registrations.findByMeetingIdAndMemberIdAndRequestKey(meetingId, context.getMemberId(), key);
+        if (registration != null) {
             if (!registration.getFingerprint().equals(fingerprint)) {
                 throw new ExpenseRequestException(409, "같은 등록 요청의 내용이 달라졌습니다. 기존 지출을 확인해주세요.");
             }
