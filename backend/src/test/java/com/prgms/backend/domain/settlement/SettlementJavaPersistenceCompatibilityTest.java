@@ -89,8 +89,8 @@ class SettlementJavaPersistenceCompatibilityTest extends MySqlContainerSupport {
         assertEquals("a".repeat(64), registration.getFingerprint());
 
         var result = new SettlementCalculator().calculate(MEETING_ID, found, Set.of(5L, 17L, 41L));
-        assertEquals(BALANCES, result.balances());
-        assertEquals(TRANSFERS, result.transfers());
+        assertEquals(BALANCES, result.getBalances());
+        assertEquals(TRANSFERS, result.getTransfers());
     }
 
     @Test

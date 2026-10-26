@@ -10,7 +10,6 @@ data class AccountResponse(
     val accountHolder: String?,
 ) {
     companion object {
-        @JvmStatic // Java의 AccountResponse.from(account) 호출 유지
         fun from(account: SettlementAccount): AccountResponse =
             AccountResponse(
                 memberId = account.memberId,
