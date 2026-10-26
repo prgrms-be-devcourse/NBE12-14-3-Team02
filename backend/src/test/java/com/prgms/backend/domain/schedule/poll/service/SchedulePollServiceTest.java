@@ -57,10 +57,10 @@ class SchedulePollServiceTest {
 
         var response = service.createPoll(10L, 1L, new SchedulePollRequest.Create(deadline));
 
-        assertEquals(21L, response.id());
-        assertEquals(10L, response.meetingId());
-        assertEquals(deadline, response.deadline());
-        assertEquals(SchedulePollStatus.OPEN, response.status());
+        assertEquals(21L, response.getId());
+        assertEquals(10L, response.getMeetingId());
+        assertEquals(deadline, response.getDeadline());
+        assertEquals(SchedulePollStatus.OPEN, response.getStatus());
         verify(polls).save(any(SchedulePoll.class));
     }
 
@@ -106,9 +106,9 @@ class SchedulePollServiceTest {
 
         var response = service.getPoll(10L, 2L);
 
-        assertEquals(20L, response.id());
-        assertEquals(1, response.candidates().size());
-        assertEquals(candidateDate, response.candidates().getFirst().candidateDate());
+        assertEquals(20L, response.getId());
+        assertEquals(1, response.getCandidates().size());
+        assertEquals(candidateDate, response.getCandidates().getFirst().getCandidateDate());
     }
 
     @Test
@@ -133,8 +133,8 @@ class SchedulePollServiceTest {
         var response = service.updateDeadline(10L, 1L,
                 new SchedulePollRequest.UpdateDeadline(changed));
 
-        assertEquals(changed, response.deadline());
-        assertEquals(SchedulePollStatus.OPEN, response.status());
+        assertEquals(changed, response.getDeadline());
+        assertEquals(SchedulePollStatus.OPEN, response.getStatus());
     }
 
     @Test

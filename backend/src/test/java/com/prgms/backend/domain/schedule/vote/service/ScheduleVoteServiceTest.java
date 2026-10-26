@@ -66,9 +66,9 @@ class ScheduleVoteServiceTest {
         var response = service.submit(10L, 40L, 2L,
                 new ScheduleVoteRequest.Submit(SchedulePreference.PREFER));
 
-        assertEquals(40L, response.candidateId());
-        assertEquals(30L, response.meetingMemberId());
-        assertEquals(SchedulePreference.PREFER, response.preference());
+        assertEquals(40L, response.getCandidateId());
+        assertEquals(30L, response.getMeetingMemberId());
+        assertEquals(SchedulePreference.PREFER, response.getPreference());
         verify(votes).save(any(ScheduleVote.class));
     }
 
@@ -83,7 +83,7 @@ class ScheduleVoteServiceTest {
                 new ScheduleVoteRequest.Submit(SchedulePreference.IMPOSSIBLE));
 
         assertEquals(SchedulePreference.IMPOSSIBLE, existing.getPreference());
-        assertEquals(SchedulePreference.IMPOSSIBLE, response.preference());
+        assertEquals(SchedulePreference.IMPOSSIBLE, response.getPreference());
         verify(votes, never()).save(any());
     }
 
