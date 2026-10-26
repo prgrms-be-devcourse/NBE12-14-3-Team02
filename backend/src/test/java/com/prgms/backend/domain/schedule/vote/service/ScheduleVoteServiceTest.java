@@ -16,7 +16,6 @@ import com.prgms.backend.global.exception.custom.schedule.ScheduleCandidateNotFo
 import com.prgms.backend.global.exception.custom.schedule.SchedulePollClosedException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -55,7 +54,7 @@ class ScheduleVoteServiceTest {
         member = member(30L, meeting, user(2L, "member"));
         candidate = candidate(40L, poll, LocalDate.now().plusDays(1));
         when(meetings.findByIdAndDeletedAtIsNullForShare(10L)).thenReturn(meeting);
-        when(polls.findByMeetingIdForShare(10L)).thenReturn(Optional.of(poll));
+        when(polls.findByMeetingIdForShare(10L)).thenReturn(poll);
         when(members.findByMeetingIdAndUserIdForUpdate(10L, 2L)).thenReturn(member);
     }
 
@@ -78,7 +77,7 @@ class ScheduleVoteServiceTest {
     void changeExistingVote() {
         ScheduleVote existing = vote(candidate, member, SchedulePreference.PREFER);
         when(votes.findByScheduleCandidateIdAndMeetingMemberId(40L, 30L))
-                .thenReturn(Optional.of(existing));
+                .thenReturn(existing);
 
         var response = service.submit(10L, 40L, 2L,
                 new ScheduleVoteRequest.Submit(SchedulePreference.IMPOSSIBLE));

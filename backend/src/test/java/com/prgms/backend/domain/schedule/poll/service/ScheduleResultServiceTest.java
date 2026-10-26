@@ -14,7 +14,6 @@ import com.prgms.backend.global.exception.custom.schedule.SchedulePollNotClosedE
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -50,7 +49,7 @@ class ScheduleResultServiceTest {
         host = member(30L, meeting, meeting.getHost());
         when(meetings.findByIdAndDeletedAtIsNull(10L)).thenReturn(meeting);
         when(members.findByMeetingIdAndUserId(10L, 1L)).thenReturn(host);
-        when(polls.findByMeetingId(10L)).thenReturn(Optional.of(poll));
+        when(polls.findByMeetingId(10L)).thenReturn(poll);
     }
 
     @Test

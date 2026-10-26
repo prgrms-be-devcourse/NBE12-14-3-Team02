@@ -110,7 +110,7 @@ public class ScheduleCandidateService {
 
     private SchedulePoll getOpenPollWithExclusiveLock(Long meetingId) {
         SchedulePoll schedulePoll =
-                schedulePollRepository.findByMeetingIdForUpdate(meetingId)
+                java.util.Optional.ofNullable(schedulePollRepository.findByMeetingIdForUpdate(meetingId))
                         .orElseThrow(
                                 () -> new SchedulePollNotFoundException(meetingId)
                         );

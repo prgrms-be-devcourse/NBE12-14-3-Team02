@@ -27,7 +27,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.sql.Timestamp;
 import java.util.UUID;
-import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -147,8 +146,7 @@ class ScheduleConcurrencyIntegrationTest {
             ExecutionException failure = assertThrows(ExecutionException.class,
                     () -> second.get(20, TimeUnit.SECONDS));
             assertInstanceOf(ScheduleCandidateLimitExceededException.class, failure.getCause());
-            assertEquals(10, schedulePollRepository.findByMeetingIdWithCandidates(meetingId)
-                    .orElseThrow().getCandidates().size());
+            assertEquals(10, java.util.Objects.requireNonNull(schedulePollRepository.findByMeetingIdWithCandidates(meetingId)).getCandidates().size());
         } finally {
             releaseFirst.countDown();
             executor.shutdownNow();
@@ -224,9 +222,9 @@ class ScheduleConcurrencyIntegrationTest {
             first.get(20, TimeUnit.SECONDS);
             second.get(20, TimeUnit.SECONDS);
             assertEquals(SchedulePreference.AVAILABLE,
-                    scheduleVoteRepository.findByScheduleCandidateIdAndMeetingMemberId(
-                            candidateId, meetingMemberId).orElseThrow().getPreference());
-            Long pollId = schedulePollRepository.findByMeetingId(meetingId).orElseThrow().getId();
+                    java.util.Objects.requireNonNull(scheduleVoteRepository.findByScheduleCandidateIdAndMeetingMemberId(
+                            candidateId, meetingMemberId)).getPreference());
+            Long pollId = java.util.Objects.requireNonNull(schedulePollRepository.findByMeetingId(meetingId)).getId();
             assertEquals(1, scheduleVoteRepository.findAllByScheduleCandidateSchedulePollId(pollId).size());
         } finally {
             releaseFirst.countDown();
@@ -237,7 +235,7 @@ class ScheduleConcurrencyIntegrationTest {
     @Test
     @DisplayName("마감 처리의 첫 조회 이후 가입한 회원도 마감 알림을 받는다")
     void closeNotifiesMembersCommittedAfterInitialRead() throws Exception {
-        Long pollId = schedulePollRepository.findByMeetingId(meetingId).orElseThrow().getId();
+        Long pollId = java.util.Objects.requireNonNull(schedulePollRepository.findByMeetingId(meetingId)).getId();
         String suffix = UUID.randomUUID().toString();
         User newUser = userRepository.save(new User(
                 "new-" + suffix + "@example.com", "new-" + suffix, "password"));
@@ -250,7 +248,7 @@ class ScheduleConcurrencyIntegrationTest {
                     "SELECT meeting_id FROM schedule_polls WHERE id = ?", Long.class, pollId);
             meetingIdRead.countDown();
             await(continueClose);
-            return Optional.ofNullable(result);
+            return result;
         }).when(schedulePollRepository).findMeetingIdByPollId(pollId);
 
         ExecutorService executor = Executors.newSingleThreadExecutor();
@@ -283,7 +281,7 @@ class ScheduleConcurrencyIntegrationTest {
     @Test
     @DisplayName("알림 저장에 실패해도 일정 투표 마감은 커밋된다")
     void notificationFailureDoesNotRollBackPollClose() {
-        Long pollId = schedulePollRepository.findByMeetingId(meetingId).orElseThrow().getId();
+        Long pollId = java.util.Objects.requireNonNull(schedulePollRepository.findByMeetingId(meetingId)).getId();
         jdbcTemplate.update("UPDATE schedule_polls SET deadline = ? WHERE id = ?",
                 Timestamp.valueOf(LocalDateTime.now().minusMinutes(1)), pollId);
         doThrow(new IllegalStateException("notification insert failure"))

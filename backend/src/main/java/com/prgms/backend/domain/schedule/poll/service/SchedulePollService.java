@@ -132,7 +132,7 @@ public class SchedulePollService {
     }
 
     private SchedulePoll getPollWithCandidates(Long meetingId){
-        return schedulePollRepository.findByMeetingIdWithCandidates(meetingId)
+        return java.util.Optional.ofNullable(schedulePollRepository.findByMeetingIdWithCandidates(meetingId))
                 .orElseThrow(
                         () -> new SchedulePollNotFoundException(
                                 meetingId
@@ -141,7 +141,7 @@ public class SchedulePollService {
     }
 
     private SchedulePoll getPollWithExclusiveLock(Long meetingId){
-        return schedulePollRepository.findByMeetingIdForUpdate(meetingId)
+        return java.util.Optional.ofNullable(schedulePollRepository.findByMeetingIdForUpdate(meetingId))
                 .orElseThrow(
                         () -> new SchedulePollNotFoundException(meetingId)
                 );

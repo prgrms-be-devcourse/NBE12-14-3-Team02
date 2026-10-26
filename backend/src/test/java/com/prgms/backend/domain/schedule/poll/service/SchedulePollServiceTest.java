@@ -20,7 +20,6 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.Optional;
 
 import static com.prgms.backend.domain.schedule.support.ScheduleTestFixtures.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -103,7 +102,7 @@ class SchedulePollServiceTest {
         candidate(40L, poll, candidateDate);
         when(meetings.findByIdAndDeletedAtIsNull(10L)).thenReturn(meeting);
         when(members.findByMeetingIdAndUserId(10L, 2L)).thenReturn(member);
-        when(polls.findByMeetingIdWithCandidates(10L)).thenReturn(Optional.of(poll));
+        when(polls.findByMeetingIdWithCandidates(10L)).thenReturn(poll);
 
         var response = service.getPoll(10L, 2L);
 
@@ -129,7 +128,7 @@ class SchedulePollServiceTest {
     @DisplayName("열린 투표의 마감 시간을 바꾸면 새 시간이 반영된다")
     void updateOpenPollDeadline() {
         LocalDateTime changed = deadline.plusDays(1);
-        when(polls.findByMeetingIdForUpdate(10L)).thenReturn(Optional.of(poll));
+        when(polls.findByMeetingIdForUpdate(10L)).thenReturn(poll);
 
         var response = service.updateDeadline(10L, 1L,
                 new SchedulePollRequest.UpdateDeadline(changed));
@@ -142,7 +141,7 @@ class SchedulePollServiceTest {
     @DisplayName("마감된 투표는 마감 시간을 변경할 수 없다")
     void rejectDeadlineChangeAfterClose() {
         poll.close();
-        when(polls.findByMeetingIdForUpdate(10L)).thenReturn(Optional.of(poll));
+        when(polls.findByMeetingIdForUpdate(10L)).thenReturn(poll);
 
         assertThrows(SchedulePollClosedException.class,
                 () -> service.updateDeadline(10L, 1L,
