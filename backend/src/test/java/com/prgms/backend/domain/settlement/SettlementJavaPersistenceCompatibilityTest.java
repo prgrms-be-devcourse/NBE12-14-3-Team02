@@ -83,8 +83,8 @@ class SettlementJavaPersistenceCompatibilityTest extends MySqlContainerSupport {
         assertEquals(100, equal.getRoundingUnit());
         assertEquals(41L, equal.getRemainderMemberId());
         assertEquals(Map.of(5L, 3300L, 17L, 3300L, 41L, 3400L), equal.getParticipantAmounts());
-        var registration = registrations.findByMeetingIdAndMemberIdAndRequestKey(MEETING_ID, 17,
-                "12345678-1234-1234-1234-123456789abc").orElseThrow();
+        var registration = java.util.Objects.requireNonNull(registrations.findByMeetingIdAndMemberIdAndRequestKey(
+                MEETING_ID, 17, "12345678-1234-1234-1234-123456789abc"));
         assertEquals(exact.getId(), registration.getExpenseId());
         assertEquals("a".repeat(64), registration.getFingerprint());
 
