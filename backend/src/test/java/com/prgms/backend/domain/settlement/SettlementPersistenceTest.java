@@ -22,6 +22,8 @@ import static org.junit.jupiter.api.Assertions.*;
 @DataJpaTest(showSql = false)
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 class SettlementPersistenceTest extends MySqlContainerSupport {
+    // API 통합 테스트가 커밋한 실제 모임 ID와 겹치지 않는다.
+    private static final long MEETING_ID = 780001;
 
     @Autowired private SettlementRepository settlements;
     @Autowired private SettlementAccountRepository accounts;
@@ -29,7 +31,7 @@ class SettlementPersistenceTest extends MySqlContainerSupport {
 
     @Test @DisplayName("version이 null인 정산은 신규 저장되고, 재조회 후 확정·계좌 보충 시 버전과 컬렉션이 유지")
     void saveReloadAndUpdate() {
-        Settlement settlement = new Settlement(10);
+        Settlement settlement = new Settlement(MEETING_ID);
         assertEquals(0L, settlement.getId());
         assertNull(settlement.getVersion());
 
@@ -37,7 +39,7 @@ class SettlementPersistenceTest extends MySqlContainerSupport {
         assertNotEquals(0L, id);
         entityManager.clear();
 
-        Settlement found = settlements.findByMeetingId(10).orElseThrow();
+        Settlement found = settlements.findByMeetingId(MEETING_ID).orElseThrow();
         assertEquals(id, found.getId());
         assertEquals(0L, found.getVersion());
         assertEquals(SettlementStatus.OPEN, found.getStatus());
@@ -48,7 +50,7 @@ class SettlementPersistenceTest extends MySqlContainerSupport {
         assertTrue(found.getTransfers().isEmpty());
         assertTrue(found.getAccounts().isEmpty());
 
-        SettlementAccount recipient = accounts.saveAndFlush(new SettlementAccount(10, 1, "은행", "001-234", "예금주"));
+        SettlementAccount recipient = accounts.saveAndFlush(new SettlementAccount(MEETING_ID, 1, "은행", "001-234", "예금주"));
         found.saveResult(
                 List.of(new SettlementBalance(1, 300, 100), new SettlementBalance(2, 0, 200)),
                 List.of(new SettlementTransfer(2, 1, 200)));
@@ -76,7 +78,7 @@ class SettlementPersistenceTest extends MySqlContainerSupport {
 
     @Test @DisplayName("계좌는 기존 strip 기준으로 공백을 제거하고, 수정 실패 시 기존 값을 유지")
     void accountSaveAndUpdate() {
-        SettlementAccount account = new SettlementAccount(10, 1, " 은행\t", "001-234", " 예금주\n");
+        SettlementAccount account = new SettlementAccount(MEETING_ID, 1, " 은행\t", "001-234", " 예금주\n");
         assertEquals("은행", account.getBankName());
         // 기존 String.strip() 기준: NBSP는 공백으로 보지 않는다
         assertEquals(" 예금주", account.getAccountHolder());
@@ -89,7 +91,7 @@ class SettlementPersistenceTest extends MySqlContainerSupport {
         long id = accounts.saveAndFlush(account).getId();
         entityManager.clear();
 
-        SettlementAccount found = accounts.findByMeetingIdAndMemberId(10, 1).orElseThrow();
+        SettlementAccount found = accounts.findByMeetingIdAndMemberId(MEETING_ID, 1).orElseThrow();
         assertEquals(id, found.getId());
         assertThrows(IllegalArgumentException.class, () -> found.update("새 은행", "abc", "새 예금주"));
         assertEquals("은행", found.getBankName());
