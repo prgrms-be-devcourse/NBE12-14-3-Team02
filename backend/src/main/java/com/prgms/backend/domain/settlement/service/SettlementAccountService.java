@@ -24,7 +24,7 @@ public class SettlementAccountService {
     @Transactional(readOnly = true)
     public AccountResponse get(long meetingId, Principal principal) {
         var context = access.requireMemberForRead(meetingId, principal);
-        return accounts.findByMeetingIdAndMemberId(meetingId, context.memberId())
+        return java.util.Optional.ofNullable(accounts.findByMeetingIdAndMemberId(meetingId, context.memberId()))
                 .map(AccountResponse::from).orElse(null);
     }
 
@@ -33,7 +33,7 @@ public class SettlementAccountService {
         // 정산 확정과 같은 모임 잠금을 잡은 뒤 확정 여부를 확인합니다.
         var context = access.requireMember(meetingId, principal);
         if (!context.meetingOpen()) throw new SettlementRequestException(409, "종료된 모임의 계좌는 변경할 수 없습니다.");
-        var settlement = settlements.findByMeetingId(meetingId).orElse(null);
+        var settlement = settlements.findByMeetingId(meetingId);
         boolean closed = settlement != null && settlement.getStatus() == SettlementStatus.CLOSED;
         if (closed && !settlement.canRegisterMissingAccount(context.memberId())) {
             throw new SettlementRequestException(409, "확정 후에는 미등록 수취인의 계좌만 등록할 수 있습니다.");
@@ -41,7 +41,7 @@ public class SettlementAccountService {
         if (request == null || !validator.validate(request).isEmpty()) {
             throw new SettlementRequestException(400, "은행명, 계좌번호와 예금주를 확인해주세요.");
         }
-        var account = accounts.findByMeetingIdAndMemberId(meetingId, context.memberId())
+        var account = java.util.Optional.ofNullable(accounts.findByMeetingIdAndMemberId(meetingId, context.memberId()))
                 .orElseGet(() -> new SettlementAccount(meetingId, context.memberId(), request.getBankName(), request.getAccountNumber(), request.getAccountHolder()));
         account.update(request.getBankName(), request.getAccountNumber(), request.getAccountHolder());
         var saved = accounts.save(account);

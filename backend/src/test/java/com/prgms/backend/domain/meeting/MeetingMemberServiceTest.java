@@ -22,7 +22,6 @@ import com.prgms.backend.global.exception.custom.meeting.MeetingMemberNotFoundEx
 import com.prgms.backend.global.exception.custom.meeting.MeetingNotFoundException;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -103,7 +102,7 @@ class MeetingMemberServiceTest {
             .thenReturn(member);
 
         when(settlementRepository.findByMeetingId(10L))
-            .thenReturn(Optional.empty());
+            .thenReturn(null);
 
         when(expenseRepository.existsMemberInExpense(10L, 200L))
             .thenReturn(false);
@@ -224,7 +223,7 @@ class MeetingMemberServiceTest {
         Settlement settlement = new Settlement(10L);
 
         when(settlementRepository.findByMeetingId(10L))
-            .thenReturn(Optional.of(settlement));
+            .thenReturn(settlement);
 
         when(expenseRepository.existsMemberInExpense(10L, 200L))
             .thenReturn(true);
@@ -251,7 +250,7 @@ class MeetingMemberServiceTest {
         Settlement settlement = new Settlement(10L);
 
         when(settlementRepository.findByMeetingId(10L))
-            .thenReturn(Optional.of(settlement));
+            .thenReturn(settlement);
 
         // 지출 관련 여부는 setUp에서 false로 설정되어 있다.
 
@@ -271,7 +270,7 @@ class MeetingMemberServiceTest {
         settlement.close(100L);
 
         when(settlementRepository.findByMeetingId(10L))
-            .thenReturn(Optional.of(settlement));
+            .thenReturn(settlement);
 
         when(expenseRepository.existsMemberInExpense(10L, 200L))
             .thenReturn(true);

@@ -20,7 +20,6 @@ import org.springframework.test.util.ReflectionTestUtils;
 import java.security.Principal;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -39,7 +38,7 @@ class SettlementServiceTest {
     @BeforeEach void setup() {
         when(access.requireMember(10, principal)).thenReturn(context(true, true));
         when(access.requireMemberForRead(10, principal)).thenReturn(context(false, true));
-        when(settlements.findByMeetingId(10)).thenReturn(Optional.empty());
+        when(settlements.findByMeetingId(10)).thenReturn(null);
         when(settlements.save(any())).thenAnswer(invocation -> {
             Settlement saved = invocation.getArgument(0);
             ReflectionTestUtils.setField(saved, "id", 100L);
@@ -68,7 +67,7 @@ class SettlementServiceTest {
     @Test @DisplayName("수취인 계좌가 없으면 결과 저장과 이벤트 발행 없이 확정을 거절한다")
     void missingRecipientAccount() {
         Settlement settlement = new Settlement(10);
-        when(settlements.findByMeetingId(10)).thenReturn(Optional.of(settlement));
+        when(settlements.findByMeetingId(10)).thenReturn(settlement);
         when(accounts.findByMeetingId(10)).thenReturn(List.of(account(2)));
         when(expenses.findByMeetingIdOrderByIdAsc(10)).thenReturn(List.of(
                 Expense.register(10, 1, "식사", 300, null, Map.of(1L, 100L, 2L, 200L), "EXACT", null, null)));
@@ -125,7 +124,7 @@ class SettlementServiceTest {
         assertEquals(409, assertThrows(BusinessException.class, () -> service.confirm(10, principal)).getCode());
         when(access.requireMember(10, principal)).thenReturn(context(true, true));
         Settlement settlement = new Settlement(10); settlement.close(1);
-        when(settlements.findByMeetingId(10)).thenReturn(Optional.of(settlement));
+        when(settlements.findByMeetingId(10)).thenReturn(settlement);
         assertEquals(409, assertThrows(BusinessException.class, () -> service.confirm(10, principal)).getCode());
         verify(settlements, never()).save(any());
     }
@@ -133,7 +132,7 @@ class SettlementServiceTest {
     @Test @DisplayName("잘못된 부담액으로 계산에 실패하면 OPEN 상태와 빈 결과를 유지")
     void failedCalculation() {
         Settlement settlement = new Settlement(10);
-        when(settlements.findByMeetingId(10)).thenReturn(Optional.of(settlement));
+        when(settlements.findByMeetingId(10)).thenReturn(settlement);
         when(expenses.findByMeetingIdOrderByIdAsc(10)).thenReturn(List.of(
                 Expense.register(10, 1, "오류", 100, null, Map.of(1L, 99L), "EXACT", null, null)));
         assertThrows(IllegalArgumentException.class, () -> service.confirm(10, principal));
@@ -146,7 +145,7 @@ class SettlementServiceTest {
     void read() {
         assertEquals(404, assertThrows(BusinessException.class, () -> service.getResult(10, principal)).getCode());
         Settlement settlement = new Settlement(10);
-        when(settlements.findByMeetingId(10)).thenReturn(Optional.of(settlement));
+        when(settlements.findByMeetingId(10)).thenReturn(settlement);
         assertEquals(404, assertThrows(BusinessException.class, () -> service.getResult(10, principal)).getCode());
         settlement.close(1);
         assertEquals(SettlementStatus.CLOSED, service.getResult(10, principal).getStatus());

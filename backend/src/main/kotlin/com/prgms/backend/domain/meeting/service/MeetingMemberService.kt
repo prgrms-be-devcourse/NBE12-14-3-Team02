@@ -94,7 +94,7 @@ class MeetingMemberService(
         val meetingMemberId = meetingMember.id
 
         // 아직 Java인 정산 저장소의 Optional 반환값은 여기서 nullable로 변환한다.
-        val settlement: Settlement? = settlementRepository.findByMeetingId(meetingId).orElse(null)
+        val settlement: Settlement? = settlementRepository.findByMeetingId(meetingId)
         val settlementCompleted = settlement?.status == SettlementStatus.CLOSED
         if (!settlementCompleted) {
             val involvedInExpense = expenseRepository.existsMemberInExpense(meetingId, meetingMemberId)

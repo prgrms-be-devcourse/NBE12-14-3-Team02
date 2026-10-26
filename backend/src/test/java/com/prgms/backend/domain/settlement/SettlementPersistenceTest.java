@@ -39,7 +39,7 @@ class SettlementPersistenceTest extends MySqlContainerSupport {
         assertNotEquals(0L, id);
         entityManager.clear();
 
-        Settlement found = settlements.findByMeetingId(MEETING_ID).orElseThrow();
+        Settlement found = java.util.Objects.requireNonNull(settlements.findByMeetingId(MEETING_ID));
         assertEquals(id, found.getId());
         assertEquals(0L, found.getVersion());
         assertEquals(SettlementStatus.OPEN, found.getStatus());
@@ -91,7 +91,7 @@ class SettlementPersistenceTest extends MySqlContainerSupport {
         long id = accounts.saveAndFlush(account).getId();
         entityManager.clear();
 
-        SettlementAccount found = accounts.findByMeetingIdAndMemberId(MEETING_ID, 1).orElseThrow();
+        SettlementAccount found = java.util.Objects.requireNonNull(accounts.findByMeetingIdAndMemberId(MEETING_ID, 1));
         assertEquals(id, found.getId());
         assertThrows(IllegalArgumentException.class, () -> found.update("새 은행", "abc", "새 예금주"));
         assertEquals("은행", found.getBankName());
