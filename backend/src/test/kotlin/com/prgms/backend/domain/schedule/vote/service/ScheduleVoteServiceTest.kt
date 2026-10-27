@@ -1,6 +1,5 @@
 package com.prgms.backend.domain.schedule.vote.service
 
-import com.prgms.backend.domain.meeting.entity.Meeting
 import com.prgms.backend.domain.meeting.entity.MeetingMember
 import com.prgms.backend.domain.meeting.repository.MeetingMemberRepository
 import com.prgms.backend.domain.meeting.repository.MeetingRepository
@@ -22,7 +21,6 @@ import com.prgms.backend.global.exception.custom.schedule.ScheduleCandidateNotFo
 import com.prgms.backend.global.exception.custom.schedule.SchedulePollClosedException
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any

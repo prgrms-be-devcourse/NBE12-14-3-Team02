@@ -1,11 +1,9 @@
 package com.prgms.backend.domain.schedule.poll.service
 
-import com.prgms.backend.domain.meeting.entity.Meeting
 import com.prgms.backend.domain.meeting.entity.MeetingMember
 import com.prgms.backend.domain.meeting.enums.MeetingMemberStatus
 import com.prgms.backend.domain.meeting.repository.MeetingMemberRepository
 import com.prgms.backend.domain.meeting.repository.MeetingRepository
-import com.prgms.backend.domain.schedule.candidate.entity.ScheduleCandidate
 import com.prgms.backend.domain.schedule.poll.entity.SchedulePoll
 import com.prgms.backend.domain.schedule.poll.repository.SchedulePollRepository
 import com.prgms.backend.domain.schedule.support.ScheduleTestFixtures.candidate
@@ -20,7 +18,6 @@ import com.prgms.backend.global.exception.custom.schedule.SchedulePollNotClosedE
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.mock

@@ -1,7 +1,6 @@
 package com.prgms.backend.domain.schedule.poll.service
 
 import com.prgms.backend.domain.meeting.entity.Meeting
-import com.prgms.backend.domain.meeting.entity.MeetingMember
 import com.prgms.backend.domain.meeting.repository.MeetingMemberRepository
 import com.prgms.backend.domain.meeting.repository.MeetingRepository
 import com.prgms.backend.domain.schedule.poll.dto.SchedulePollRequest
@@ -13,7 +12,6 @@ import com.prgms.backend.domain.schedule.support.ScheduleTestFixtures.meeting
 import com.prgms.backend.domain.schedule.support.ScheduleTestFixtures.member
 import com.prgms.backend.domain.schedule.support.ScheduleTestFixtures.poll
 import com.prgms.backend.domain.schedule.support.ScheduleTestFixtures.user
-import com.prgms.backend.domain.schedule.support.ScheduleTestFixtures.vote
 import com.prgms.backend.global.exception.custom.meeting.MeetingHostRequiredException
 import com.prgms.backend.global.exception.custom.meeting.MeetingMemberAlreadyLeftException
 import com.prgms.backend.global.exception.custom.meeting.MeetingNotActiveException
@@ -21,7 +19,6 @@ import com.prgms.backend.global.exception.custom.schedule.SchedulePollAlreadyExi
 import com.prgms.backend.global.exception.custom.schedule.SchedulePollClosedException
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
