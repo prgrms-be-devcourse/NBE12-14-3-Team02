@@ -12,8 +12,6 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 
 object ScheduleTestFixtures {
-    // 서비스 테스트 전환 중 남아 있는 Java 호출자를 지원한다.
-    @JvmStatic
     fun user(
         id: Long,
         nickname: String,
@@ -22,7 +20,6 @@ object ScheduleTestFixtures {
             ReflectionTestUtils.setField(this, "id", id)
         }
 
-    @JvmStatic
     fun meeting(
         id: Long,
         host: User,
@@ -31,7 +28,6 @@ object ScheduleTestFixtures {
             ReflectionTestUtils.setField(this, "id", id)
         }
 
-    @JvmStatic
     fun member(
         id: Long,
         meeting: Meeting,
@@ -41,7 +37,6 @@ object ScheduleTestFixtures {
             ReflectionTestUtils.setField(this, "id", id)
         }
 
-    @JvmStatic
     fun poll(
         id: Long,
         meeting: Meeting,
@@ -51,7 +46,6 @@ object ScheduleTestFixtures {
             ReflectionTestUtils.setField(this, "id", id)
         }
 
-    @JvmStatic
     fun candidate(
         id: Long,
         poll: SchedulePoll,
@@ -61,7 +55,6 @@ object ScheduleTestFixtures {
             ReflectionTestUtils.setField(this, "id", id)
         }
 
-    @JvmStatic
     fun vote(
         candidate: ScheduleCandidate,
         member: MeetingMember,
