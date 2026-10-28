@@ -20,8 +20,6 @@ class Notification(
     title: String,
     content: String?,
     redirectUrl: String?,
-    // 기존 Java 호출자의 시그니처를 유지하기 위한 인자이며 항상 읽지 않음으로 생성한다.
-    @Suppress("UNUSED_PARAMETER") isRead: Boolean,
 ) : BaseCreatedEntity() {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

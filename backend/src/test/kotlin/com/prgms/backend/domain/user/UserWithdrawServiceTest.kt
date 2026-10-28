@@ -207,7 +207,7 @@ internal class UserWithdrawServiceTest {
         ).thenReturn(listOf(MeetingMember(memberMeeting, user)))
 
         whenever(meetingMemberService.leaveMeeting(20L, 1L))
-            .thenThrow(MeetingMemberHasUnsettledExpenseException(20L, 1L))
+            .thenThrow(MeetingMemberHasUnsettledExpenseException())
 
         // when & then
         assertThrows<MeetingMemberHasUnsettledExpenseException> {

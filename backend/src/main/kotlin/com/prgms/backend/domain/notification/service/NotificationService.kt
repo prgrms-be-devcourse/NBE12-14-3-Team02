@@ -91,7 +91,6 @@ class NotificationService(
                     title,
                     content,
                     redirectUrl,
-                    false,
                 ),
             )
         }

@@ -61,7 +61,6 @@ class NotificationServiceTest {
                 "제목",
                 "내용",
                 "/url",
-                false,
             )
         ReflectionTestUtils.setField(notification, "id", id)
         return notification

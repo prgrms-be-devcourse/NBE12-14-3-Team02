@@ -8,7 +8,7 @@ import jakarta.persistence.Id
 import jakarta.persistence.Table
 import jakarta.persistence.UniqueConstraint
 
-// Java 호출부가 null을 넘겨도 기존처럼 IllegalArgumentException으로 거절하도록 계좌 정보는 nullable로 받습니다.
+// null 입력도 도메인 검증에서 IllegalArgumentException으로 거절하도록 계좌 정보는 nullable로 받습니다.
 @Entity
 @Table(
     name = "settlement_accounts",

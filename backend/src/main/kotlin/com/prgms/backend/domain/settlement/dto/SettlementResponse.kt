@@ -18,7 +18,6 @@ data class SettlementResponse(
     val missingAccountMemberIds: List<Long>,
 ) {
     companion object {
-        @JvmStatic // Java의 SettlementResponse.forMember(...) 호출 유지
         fun forMember(
             settlement: Settlement,
             memberId: Long,

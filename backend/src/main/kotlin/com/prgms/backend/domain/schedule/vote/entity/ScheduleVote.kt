@@ -58,7 +58,6 @@ class ScheduleVote private constructor(
     fun getScore(): Int = preference.score
 
     companion object {
-        @JvmStatic
         fun create(
             scheduleCandidate: ScheduleCandidate,
             meetingMember: MeetingMember,

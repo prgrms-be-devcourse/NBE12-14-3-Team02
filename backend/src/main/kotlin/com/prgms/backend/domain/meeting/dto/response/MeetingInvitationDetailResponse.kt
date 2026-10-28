@@ -12,7 +12,6 @@ data class MeetingInvitationDetailResponse(
     val participantCount: Long,
 ) {
     companion object {
-        @JvmStatic
         fun from(
             invitation: MeetingInvitation,
             alreadyJoined: Boolean,

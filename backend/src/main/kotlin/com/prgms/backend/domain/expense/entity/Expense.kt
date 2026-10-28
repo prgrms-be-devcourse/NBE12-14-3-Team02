@@ -123,7 +123,6 @@ class Expense(
 
     companion object {
         // 정산금액 나누는 방식 n분의1, 지정 등록 -> 지정 등록의 금액 지정 기능 추가 예정
-        @JvmStatic // Java의 Expense.register(...) 호출 유지
         fun register(
             meetingId: Long,
             payerMemberId: Long,

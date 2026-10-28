@@ -24,7 +24,6 @@ data class ExpenseResponse(
     )
 
     companion object {
-        @JvmStatic // Java의 ExpenseResponse.from(expense) 호출 유지
         fun from(expense: Expense): ExpenseResponse =
             ExpenseResponse(
                 id = expense.id,

@@ -11,7 +11,6 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder
 @JsonPropertyOrder("success", "code", "message", "data")
 @ConsistentCopyVisibility
 data class ApiResponse<T> private constructor(
-    @get:JvmName("isSuccess")
     @get:JsonProperty("success")
     val success: Boolean,
     val code: Int,
@@ -20,35 +19,28 @@ data class ApiResponse<T> private constructor(
 ) {
     private constructor() : this(false, 0, null, null)
 
-    // 남아 있는 Java 호출자의 정적 팩토리 호출을 유지한다.
     companion object {
-        @JvmStatic
         fun <T> success(
             code: Int,
             data: T?,
         ): ApiResponse<T> = ApiResponse(true, code, "", data)
 
-        @JvmStatic
         fun <T> success(
             code: Int,
             message: String?,
             data: T?,
         ): ApiResponse<T> = ApiResponse(true, code, message, data)
 
-        @JvmStatic
         fun noContentSuccess(): ApiResponse<Void> = ApiResponse(true, 204, "", null)
 
-        @JvmStatic
         fun noContentSuccess(message: String?): ApiResponse<Void> = ApiResponse(true, 204, message, null)
 
-        @JvmStatic
         fun <T> error(
             code: Int,
             message: String?,
             data: T?,
         ): ApiResponse<T> = ApiResponse(false, code, message, data)
 
-        @JvmStatic
         fun error(
             code: Int,
             message: String?,
