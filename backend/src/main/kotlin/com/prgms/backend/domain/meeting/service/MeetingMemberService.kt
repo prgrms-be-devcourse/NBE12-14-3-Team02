@@ -81,7 +81,7 @@ class MeetingMemberService(
 
         // 진행 중인 모임의 모임장은 탈퇴할 수 없다.
         if (meeting.isHost(userId) && !meeting.isCompleted()) {
-            throw MeetingHostCannotLeaveException(meetingId, userId)
+            throw MeetingHostCannotLeaveException()
         }
 
         val meetingMember =
@@ -93,13 +93,12 @@ class MeetingMemberService(
 
         val meetingMemberId = meetingMember.id
 
-        // 아직 Java인 정산 저장소의 Optional 반환값은 여기서 nullable로 변환한다.
         val settlement: Settlement? = settlementRepository.findByMeetingId(meetingId)
         val settlementCompleted = settlement?.status == SettlementStatus.CLOSED
         if (!settlementCompleted) {
             val involvedInExpense = expenseRepository.existsMemberInExpense(meetingId, meetingMemberId)
             if (involvedInExpense) {
-                throw MeetingMemberHasUnsettledExpenseException(meetingId, userId)
+                throw MeetingMemberHasUnsettledExpenseException()
             }
         }
 

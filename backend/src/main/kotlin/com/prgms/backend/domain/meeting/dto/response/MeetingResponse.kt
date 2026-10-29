@@ -12,7 +12,6 @@ data class MeetingResponse(
     val participantCount: Long,
 ) {
     companion object {
-        @JvmStatic
         fun from(
             meeting: Meeting,
             participantCount: Long,

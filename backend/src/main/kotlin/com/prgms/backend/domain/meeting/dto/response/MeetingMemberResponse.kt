@@ -14,7 +14,6 @@ data class MeetingMemberResponse(
     val leftAt: LocalDateTime?,
 ) {
     companion object {
-        @JvmStatic
         fun from(meetingMember: MeetingMember): MeetingMemberResponse =
             MeetingMemberResponse(
                 id = meetingMember.id,

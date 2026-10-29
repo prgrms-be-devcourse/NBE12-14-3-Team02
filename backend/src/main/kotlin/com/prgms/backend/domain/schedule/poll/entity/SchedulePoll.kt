@@ -96,7 +96,6 @@ class SchedulePoll private constructor(
     companion object {
         private const val MAX_CANDIDATE_COUNT = 10
 
-        @JvmStatic
         fun create(
             meeting: Meeting,
             deadline: LocalDateTime,
